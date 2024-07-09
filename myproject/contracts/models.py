@@ -3,10 +3,10 @@ from django.db import models
 
 class Contract(models.Model):
     category = models.CharField(max_length=20)
-    origin = models.TextField()
-    origin_url = models.CharField(max_length=200, null=True)
-    result = models.TextField(null=True)
-    result_url = models.CharField(max_length=500, null=True)
+    origin = models.FileField(upload_to='contracts/html/')
+    origin_url = models.FileField(upload_to='contracts/')
+    result = models.FileField(upload_to='contracts/html/')
+    result_url = models.FileField(upload_to='contracts/')
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(null=True, auto_now=True)
