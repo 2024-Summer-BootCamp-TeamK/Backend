@@ -3,6 +3,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
 from .models import Document
 import uuid
 from drf_yasg.utils import swagger_auto_schema
@@ -12,7 +13,7 @@ class DocumentUploadView(APIView):
     # 파일이나 폼 형태의 데이터를 처리해야하는 경우 필요!
     parser_classes = [MultiPartParser, FormParser]
 
-    # 스웨거에서 파일 업로드를 포함하고싶을 땐 밑에처럼 openapi.IN_FORM으로 스키마 구성하기!!
+    # 스웨거로에서 파일 업로드를 포함하고싶을 땐 밑에처럼 openapi.IN_FORM으 스키마 구성하기!!
     @swagger_auto_schema(
         operation_description="Upload a PDF document",
         manual_parameters=[
@@ -64,3 +65,41 @@ class DocumentUploadView(APIView):
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class DocumentRead(APIView):
+    @swagger_auto_schema(
+        # 작업에 대한 설명
+        operation_description="Retrieve a document by its ID",
+        # documentId 경로 parameter 정의
+        # IN_PATH를 통해 TYPE_INTEGER형태의 parameter가 경로에 포함되어 있음을 명시
+        manual_parameters=[
+            openapi.Parameter(
+                'documentId',
+                openapi.IN_PATH,
+                description="ID of the Document",
+                type=openapi.TYPE_INTEGER
+            )
+        ],
+        # API 작업의 응답, 문서를 찾은 경우: 200 상태 코드, 못찾은 경우: 404 상태 코드
+        responses={
+            200: openapi.Response('Document retrieved successfully', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'pdfUrl': openapi.Schema(type=openapi.TYPE_STRING, description='URL of the PDF file')
+                }
+            )),
+            404: 'Document not found.'
+        }
+    )
+    def get(self, request, documentId):
+        # documentId가 요청에 포함되어 있는지 확인
+        if not documentId:
+            return Response({'error': 'Document ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        # 데이터베이스에서 Document 객체를 조회, 못찾은 경우 404 상태 코드
+        document = get_object_or_404(Document, pk=documentId)
+        # pdfUrl을 포함한 응답 데이터를 생성하고, 클라이언트에게 반환
+        # 성공시 200 상태 코드
+        response_data = {
+            'pdfUrl': document.pdfUrl.url
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
