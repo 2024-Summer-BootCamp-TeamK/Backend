@@ -31,7 +31,15 @@ class uploadView(APIView):
                               required=True),
         ],
         responses={
-            201: 'File upload successfully',
+            201: openapi.Response(
+               'File upload successfully',
+                 openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'contractId': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID of the Contract'),
+                    }
+                )
+            ),
             400: 'Invalid data'
         }
     )
@@ -41,31 +49,32 @@ class uploadView(APIView):
         pdf_file = request.FILES.get('pdf_file')
 
         if not category or not pdf_file:
-            return Response({'error': 'Category 나 PDF파일은 필수로 입력해야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Category와 PDF파일은 필수로 입력해야 합니다.'}, status=status.HTTP_400_BAD_REQUEST)
         try :
             contract = Contract(category=category)
 
             file_name = f'{uuid.uuid4()}.pdf'
 
-            # pdf파일 S3에 업로드해서 url가져오기
+            # pdf 파일 S3에 업로드
             contract.origin_url.save(file_name, ContentFile(pdf_file.read()))
             contract.save()
 
-            #pdf 업로드한 url
+            # S3 url 가져오기.
             pdf_url = contract.origin_url.url
 
+            # pdf -> html 코드 변환
             pdfco_api_key = os.environ.get('PDFCO_API_KEY')
             html_content = pdf_to_html_with_pdfco(pdfco_api_key, pdf_url)
 
+            # html 코드 S3에 업로드
             if html_content:
                 html_file_name = f'{uuid.uuid4()}.html'
 
                 contract.origin.save(html_file_name, ContentFile(html_content.encode('utf-8')))
                 contract.save()
 
-                html_url = contract.origin.url
-
                 # 텍스트 추출
+                # html_url = contract.origin.url
                 # html_response = requests.get(html_url)
                 # html_response.raise_for_status()
                 # uploaded_html_content = html_response.content.decode('utf-8')
