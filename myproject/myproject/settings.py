@@ -80,7 +80,7 @@ WSGI_APPLICATION = 'myproject.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 load_dotenv()
-
+print(os.getenv('MYSQL_PASSWORD'))
 # Database settings
 DATABASES = {
     'default': {
