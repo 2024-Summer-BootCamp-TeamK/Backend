@@ -23,16 +23,31 @@ from drf_yasg import openapi
         5 -> 수정하기 API 구현
 '''
 
+
 class ContractModifyView(APIView):
 
     @swagger_auto_schema(request_body=ContractUpdateSerializer)
     def put(self, request, *args, **kwargs):
+
         contract_id = kwargs.get('contractId')
-        contract_origin = Contract.objects.filter(id=contract_id).values('origin').first()
-        # contract_id로 해당 Contract origin 필드 가져옴
-        if contract_origin:  # contract 가 있다면
+        contract = Contract.objects.filter(id=contract_id).first()
+
+        if contract:  # contract 가 있다면
+            contract_origin = contract.origin               # contract_id로 해당 Contract origin 필드 가져옴
             serializer = ContractUpdateSerializer(data=request.data)  # reqeust로 넘어온 data를 serializer로 역직렬화(JSON -> 데이터)
-            if serializer.is_valid():
+
+            if serializer.is_valid():  # 유효하다면
+                article_ids = serializer.validated_data.get('article_ids', [])
+
+                if not article_ids:   # article_ids가 빈 배열인 경우
+                    contract.result_url = contract.origin_url
+                    contract.save()
+                    return Response({
+                        'origin_url': contract.origin_url,
+                        'result_url': contract.result_url
+                    }, status=status.HTTP_200_OK)
+
+                # 빈 배열이 아닌 경우
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors ,status=status.HTTP_400_BAD_REQUEST)
         return Response({'error': '해당 계약서를 찾을 수 없습니다.'},status=status.HTTP_404_NOT_FOUND)
