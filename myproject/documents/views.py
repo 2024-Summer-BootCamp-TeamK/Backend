@@ -7,6 +7,7 @@ from .models import Document
 import uuid
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from django.core.mail import EmailMessage
 
 class DocumentUploadView(APIView):
     # 파일이나 폼 형태의 데이터를 처리해야하는 경우 필요!
@@ -25,7 +26,8 @@ class DocumentUploadView(APIView):
                 properties={
                     'message': openapi.Schema(type=openapi.TYPE_STRING, description='Success message'),
                     'pdfUrl': openapi.Schema(type=openapi.TYPE_STRING, description='URL of the uploaded PDF file'),
-                    'documentId': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID of the document')
+                    'documentId': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID of the document'),
+                    'isSuccessed': openapi.Schema(type=openapi.TYPE_INTEGER, description='is email sended?')
                 }
             )),
             400: 'Email and PDF file are required.'
@@ -56,11 +58,21 @@ class DocumentUploadView(APIView):
             # Document 객체 저장
             document.save()
 
+            # 메일 발송을 위한 객체
+            emailMessage = EmailMessage(
+                'Title', # 메일 제목
+                'Content', # 메일 내용
+                to=[email] # 수신자 메일
+            )
+
+            isSuccessed = emailMessage.send()
+
             # 테스트를 위해 응답으로 pdfUrl을 추가로 지정했음. api 연동할 땐 documentId만!
             return Response({
                 'message': 'File uploaded successfully',
                 'pdfUrl': document.pdfUrl.url,
-                'documentId': document.id
+                'documentId': document.id,
+                'isSuccessed': isSuccessed # 1이면 메일 전송 성공 0이면 실패
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
