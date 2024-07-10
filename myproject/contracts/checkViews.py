@@ -8,14 +8,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 
-from .uploadSerializers import ArticleSerializer
-from .utils.pdf_to_html import pdf_to_html_with_pdfco
-from .models import Contract, Article, Type
+from .serializers import ArticleSerializer
+from .utils.pdfToHtml import pdf_to_html_with_pdfco
+from .models import Contract, Type
 import uuid
 import requests
 import os
 import json
-from .utils.openai_call import analyze_contract
+from .utils.openAICall import analyze_contract
 
 
 class UploadView(APIView):
