@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'contracts',
     'documents',
     'drf_yasg',
-    'storages'
+    'storages',
 ]
 
 MIDDLEWARE = [

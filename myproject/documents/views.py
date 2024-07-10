@@ -1,3 +1,4 @@
+import boto3
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
@@ -95,11 +96,73 @@ class DocumentRead(APIView):
         # documentId가 요청에 포함되어 있는지 확인
         if not documentId:
             return Response({'error': 'Document ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
-        # 데이터베이스에서 Document 객체를 조회, 못찾은 경우 404 상태 코드
+        # DB에서 Document 객체를 조회, 못찾은 경우 404 상태 코드
         document = get_object_or_404(Document, pk=documentId)
         # pdfUrl을 포함한 응답 데이터를 생성하고, 클라이언트에게 반환
         # 성공시 200 상태 코드
         response_data = {
             'pdfUrl': document.pdfUrl.url
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+
+class DocumentChange(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
+    @swagger_auto_schema(
+        operation_description='Modifying a document by uploading a new PDF file',
+        manual_parameters=[
+            openapi.Parameter(
+                'documentId',
+                openapi.IN_PATH,
+                description="ID of the Document",
+                type=openapi.TYPE_INTEGER
+            ),
+            openapi.Parameter(
+                'pdfFile',
+                openapi.IN_FORM,
+                description="PDF File",
+                type=openapi.TYPE_FILE
+            )
+        ],
+        responses={
+            200: openapi.Response('Document modified successfully', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'pdfUrl': openapi.Schema(type=openapi.TYPE_STRING, description='URL of the updated PDF file')
+                }
+            )),
+            400: 'Bad request. Missing document ID or PDF file.',
+            404: 'Document not found.'
+        }
+    )
+    def put(self, request, documentId):
+        if not documentId:
+            return Response({'error': 'Document ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        document = get_object_or_404(Document, pk=documentId)
+
+        # 클라이언트로부터 전송된 파일을 가져오기
+        uploaded_file = request.FILES.get('pdfFile')
+        if not uploaded_file:
+            return Response({'error': 'No PDF file was uploaded.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        s3 = boto3.client('s3')
+        bucket_name = 'lawbotttt'
+        # 기존 pdfUrl에서 파일 경로를 추출
+        pdf_key = document.pdfUrl.name
+
+        # pdf_key에 중복되는 'documents/'를 제거
+        if pdf_key.startswith('documents/documents/'):
+            pdf_key = pdf_key.replace('documents/documents/', 'documents/', 1)
+
+        try:
+            # S3에 새로운 파일 업로드
+            s3.put_object(Bucket=bucket_name, Key=pdf_key, Body=uploaded_file.read(), ContentType='application/pdf')
+        except Exception as e:
+            return Response({'error': 'Failed to upload new PDF file to S3.', 'details': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # pdfUrl을 포함한 응답 데이터를 생성하고, 클라이언트에게 반환
+        response_data = {
+            'pdfUrl': f"https://{bucket_name}.s3.ap-northeast-2.amazonaws.com/{pdf_key}"  # S3 URL 형식에 맞게 수정
         }
         return Response(response_data, status=status.HTTP_200_OK)
