@@ -9,6 +9,7 @@ import uuid
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.core.mail import EmailMessage
+from .utils import generate_password
 
 class DocumentUploadView(APIView):
     # 파일이나 폼 형태의 데이터를 처리해야하는 경우 필요!
@@ -41,6 +42,9 @@ class DocumentUploadView(APIView):
         # pdfFile은 FILES로 받아오기
         pdfFile = request.FILES.get('pdfFile')
 
+        # password는 무작위로 생성
+        password = generate_password()
+
         # 둘 중 하나라도 비어있다면 오류
         if not email or not pdfFile:
             return Response({'error': 'Email and PDF file are required.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -50,7 +54,7 @@ class DocumentUploadView(APIView):
             file_name = f'{uuid.uuid4()}.pdf'
 
             # Document 객체 생성
-            document = Document(email=email)
+            document = Document(email=email, password=password)
 
             # Document의 pdfUrl 필드에 upload_to 속성이 걸려있기 때문에 바로 ContentFile 형태로 저장해도 url로 저장됨
             # 이게 가능한 이유는 settings.py에서 default_file_storage로 s3를 지정해놨기때문!!
@@ -62,10 +66,11 @@ class DocumentUploadView(APIView):
             # 메일 발송을 위한 객체
             emailMessage = EmailMessage(
                 'Title', # 메일 제목
-                'Content', # 메일 내용
+                f'안녕하세여! Password: {password}', # 메일 내용
                 to=[email] # 수신자 메일
             )
 
+            # 이메일 발송
             isSuccessed = emailMessage.send()
 
             # 테스트를 위해 응답으로 pdfUrl을 추가로 지정했음. api 연동할 땐 documentId만!
@@ -115,3 +120,38 @@ class DocumentRead(APIView):
             'pdfUrl': document.pdfUrl.url
         }
         return Response(response_data, status=status.HTTP_200_OK)
+
+class DocumentAccessView(APIView):
+
+    @swagger_auto_schema(
+        operation_description="Check document access by verifying the password.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description='Document password'),
+            }
+        ),
+        responses={
+            200: openapi.Response('Success', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'check': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Check result'),
+                }
+            )),
+            400: 'Bad Request',
+            403: 'Forbidden',
+        }
+    )
+    def post(self, request, documentId):
+        if not documentId:
+            return Response({'error': 'Document Id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        document = get_object_or_404(Document, pk=documentId)
+        password = request.data.get('password')
+
+        if password == document.password:
+            return Response({'check': True}, status=status.HTTP_200_OK)
+        else:
+            return Response({'check': False}, status=status.HTTP_403_FORBIDDEN)
+
+
+
