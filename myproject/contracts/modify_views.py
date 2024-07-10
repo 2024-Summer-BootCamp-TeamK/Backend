@@ -30,17 +30,15 @@ class ContractModifyView(APIView):
         contract_id = kwargs.get('contractId')
         contract = Contract.objects.filter(id=contract_id).first()
 
-        if contract:
-            serializer = ContractUpdateSerializer(data=request.data)
+        if contract:  # contract 가 있다면
+            serializer = ContractUpdateSerializer(data=request.data)  # reqeust로 넘어온 data를 serializer로 역직렬화(JSON -> 데이터)
 
             try:
                 serializer.is_valid(raise_exception=True)
                 article_ids = serializer.validated_data.get('article_ids', [])
 
-                # article_ids가 빈 배열인 경우
                 if not article_ids:
-                    # 원본 그대로 수정본으로 이동
-                    contract.result = contract.origin
+                    # article_ids가 빈 배열인 경우 origin_url을 result_url에 복사
                     contract.result_url = contract.origin_url
                     contract.save()
                     return Response(status=status.HTTP_200_OK)
@@ -127,8 +125,6 @@ class ContractModifyView(APIView):
             return Response({'error': 'Unicode decode error: ' + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             return Response({'error': {e}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 
 
 
