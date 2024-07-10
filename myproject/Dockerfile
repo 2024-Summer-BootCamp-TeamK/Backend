@@ -21,8 +21,5 @@ RUN apt install pkg-config \
 # 소스코드를 컨테이너 내부 백엔드 디렉토리로 복사
 COPY . .
 
-#CMD celery -A myproject worker --loglevel=info
+CMD celery -A myproject worker --loglevel=info
 
-
-# django 서버 gunicorn 이용해 실행
-# CMD [ "gunicorn", "--config", "gunicorn_config.py", "app.wsgi:application" ]
