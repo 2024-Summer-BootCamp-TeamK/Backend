@@ -116,7 +116,7 @@ DATABASES = {
         'NAME': os.getenv('MYSQL_DATABASE'),
         'USER': os.getenv('MYSQL_USER'),
         'PASSWORD': os.getenv('MYSQL_PASSWORD'),
-        'HOST': '127.0.0.1',  # 추후 장고도 도커에 띄우면 mysqldb로 변경
+        'HOST': 'mysqldb',  # 추후 장고도 도커에 띄우면 mysqldb로 변경
         'PORT': '3306',
     }
 }
