@@ -146,8 +146,6 @@ class ContractDetailView(APIView):
 
             pdf_url = contract.origin_url.url
             html_url = contract.origin.url
-            print(pdf_url)
-            print(html_url)
 
             # 텍스트 추출
             html_response = requests.get(html_url)
@@ -172,10 +170,10 @@ class ContractDetailView(APIView):
             for i in range(len(parsed_result)):
                 article_data = {
                     "contract_id": contract.id,
-                    "sentence": parsed_result[i]["sentence"],
-                    "description": parsed_result[i]["description"],
-                    "law": parsed_result[i]["law"],
-                    "recommend": parsed_result[i]["recommend"]
+                    "sentence": parsed_result[i].get("sentence", ""),
+                    "description": parsed_result[i].get("description", ""),
+                    "law": parsed_result[i].get("law", ""),
+                    "recommend": parsed_result[i].get("recommend", "")
                 }
                 # 시리얼라이저를 이용해 데이터 저장
                 serializer = ArticleSerializer(data=article_data)
@@ -190,7 +188,7 @@ class ContractDetailView(APIView):
                     article_data = {
                         "articleId": article_instance.id,
                         "sentence": article_instance.sentence,
-                        "types": parsed_result[i]["types"],
+                        "types": parsed_result[i].get("types", []),
                         "description": article_instance.description,
                         "law": article_instance.law,
                         "recommend": article_instance.recommend
