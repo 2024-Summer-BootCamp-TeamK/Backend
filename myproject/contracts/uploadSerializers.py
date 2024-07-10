@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from contracts.models import Article, Type
+from .models import Article, Type
 
 
 class ArticleSerializer(serializers.ModelSerializer):

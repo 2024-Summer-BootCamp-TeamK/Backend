@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from .modify_serializers import ContractUpdateSerializer
 from .models import Contract, Article
 from drf_yasg.utils import swagger_auto_schema
-from .utils import html_to_pdf_with_pdfco
+from .utils.pdf_to_html import html_to_pdf_with_pdfco
 from dotenv import load_dotenv
 import requests
 
