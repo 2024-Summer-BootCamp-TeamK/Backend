@@ -1,6 +1,5 @@
 from rest_framework import serializers
-
-from .models import Contract
+from .models import Contract, Article
 
 
 class ContractUpdateSerializer(serializers.Serializer):
@@ -14,3 +13,10 @@ class UpdatedContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
         fields = ['result_url']
+
+
+class ArticleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Article
+        fields = ['contract_id', 'sentence', 'description', 'law', 'recommend']
+
