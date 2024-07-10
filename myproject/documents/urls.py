@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import DocumentUploadView, DocumentRead, DocumentAccessView
+from .views import DocumentUploadView, DocumentRead, DocumentAccessView, DocumentChange
 
 urlpatterns = [
     # document 업로드 api

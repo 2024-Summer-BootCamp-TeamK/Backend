@@ -2,12 +2,13 @@ import os
 import uuid
 from django.utils import timezone
 from django.core.files.base import ContentFile
+from drf_yasg import openapi
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .modify_serializers import ContractUpdateSerializer
+from .modify_serializers import ContractUpdateSerializer, UpdatedContractSerializer
 from .models import Contract, Article
 from drf_yasg.utils import swagger_auto_schema
 from .utils.pdf_to_html import html_to_pdf_with_pdfco
@@ -127,11 +128,34 @@ class ContractModifyView(APIView):
             return Response({'error': {e}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class UpdatedContractRead(APIView):
+    @swagger_auto_schema(
+        operation_description="수정된 계약서를 조회하는 Url을 반환해주는 API",
 
-
-
-
-
+        # API 작업의 응답, 문서를 찾은 경우: 200 상태 코드, 못찾은 경우: 404 상태 코드
+        responses={
+            200: openapi.Response('Modified Contract retrieved successfully', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'origin_url': openapi.Schema(type=openapi.TYPE_STRING, description='URL of the Origin PDF file'),
+                    'result_url': openapi.Schema(type=openapi.TYPE_STRING, description='URL of the Modified PDF File')
+                }
+            )),
+            404: 'Contract not found.'
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        contract_id = kwargs.get('contractId')
+        if contract_id:
+            try:
+                contract = Contract.objects.get(id=contract_id)
+                serializer = UpdatedContractSerializer(contract)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Contract.DoesNotExist:
+                return Response({'error': 'Contract not found'}, status=status.HTTP_404_NOT_FOUND)
+            except Exception as e:
+                return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': 'contractId not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
