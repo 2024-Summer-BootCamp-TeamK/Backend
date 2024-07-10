@@ -11,6 +11,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.core.mail import EmailMessage
 from .utils import generate_password
+from .tasks import pdf_to_s3
 
 class DocumentUploadView(APIView):
     # 파일이나 폼 형태의 데이터를 처리해야하는 경우 필요!
@@ -59,7 +60,8 @@ class DocumentUploadView(APIView):
 
             # Document의 pdfUrl 필드에 upload_to 속성이 걸려있기 때문에 바로 ContentFile 형태로 저장해도 url로 저장됨
             # 이게 가능한 이유는 settings.py에서 default_file_storage로 s3를 지정해놨기때문!!
-            document.pdfUrl.save(file_name, ContentFile(pdfFile.read()))
+            #document.pdfUrl.save(file_name, ContentFile(pdfFile.read()))
+            pdf_to_s3(document, file_name, ContentFile(pdfFile.read()))
 
             # Document 객체 저장
             document.save()

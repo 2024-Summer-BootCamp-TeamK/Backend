@@ -116,7 +116,7 @@ DATABASES = {
         'NAME': os.getenv('MYSQL_DATABASE'),
         'USER': os.getenv('MYSQL_USER'),
         'PASSWORD': os.getenv('MYSQL_PASSWORD'),
-        'HOST': '127.0.0.1',  # 추후 장고도 도커에 띄우면 mysqldb로 변경
+        'HOST': 'mysqldb',  # 추후 장고도 도커에 띄우면 mysqldb로 변경
         'PORT': '3306',
     }
 }
@@ -181,3 +181,9 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+# Celery 메세지 브로커 설정
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
+
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
