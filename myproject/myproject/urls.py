@@ -38,4 +38,5 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('', include('contracts.uploadurls')),
     path('api/v1/', include('documents.urls')),
+    path('', include('contracts.urls')),
 ]
