@@ -1,40 +1,29 @@
 import os
+import uuid
 
+from django.core.files.base import ContentFile
 from rest_framework import status
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .modify_serializers import ContractUpdateSerializer
 from .models import Contract, Article
 from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
+from .utils import html_to_pdf_with_pdfco
 from dotenv import load_dotenv
 import requests
 
-'''
-        수정 시퀀스
-        1. contractId와 reqeust를 통해 넘겨받은 articleId의 배열을 이용
-        2. contractId에 해당하는 Contract의 origin필드에 들어있는 html코드속
-         넘겨받은 배열의 articleId에 해당하는 문장들을 articleId의 recommend필드의 문장으로 각각 수정
-        3. 수정된 html코드는 Contractd의 result필드에 들어감
-        4. 해당 html코드를 pdf형태로 만들고 S3에 업로드 후 Contract의 result_url필드로 해당 객체의 url 삽입
-        5. response로 result_url과 origin_url 반환
-            
-        issue는
-        1,2,3 -> 계약서 수정하기
-        4 -> 수정된 계약서 S3 업로드
-        5 -> 수정하기 API 구현
-'''
+
 load_dotenv()
 
 
 class ContractModifyView(APIView):
 
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     @swagger_auto_schema(
         operation_description="Modify sentences from the origin as desired by the user.",
-        request_body=ContractUpdateSerializer,
+        request_body=ContractUpdateSerializer(required=False),
     )
     def put(self, request, *args, **kwargs):
 
@@ -48,21 +37,26 @@ class ContractModifyView(APIView):
                 article_ids = serializer.validated_data.get('article_ids', [])
 
                 if not article_ids:   # article_ids가 빈 배열인 경우
+
+                    # 원본 그대로 수정본으로 이동
+                    contract.result = contract.origin
                     contract.result_url = contract.origin_url
                     contract.save()
                     return Response(status=status.HTTP_200_OK)
                 # 빈 배열이 아닌 경우
+
+                # url로 가져온 html 문자열 저장
                 url = f'https://{os.getenv("AWS_STORAGE_BUCKET_NAME")}.s3.ap-northeast-2.amazonaws.com/{contract.origin.name}'
-                contract_origin_html = self.get_html_from_url(url) # url로 가져온 html 문자열 저장
+                contract_origin_html = self.get_html_from_url(url)
 
-                modified_html = self.modify_html(contract_origin_html, article_ids) # html 속 선택 조항들 수정 진행
+                # html 속 선택 조항들 수정 진행
+                modified_html = self.modify_html(contract_origin_html, article_ids)
 
+                # 수정본 html 문자열 -> html파일로 -> pdf파일로 -> html,pdf 둘 다 업로드
+                self.upload_html_pdf_to_s3(modified_html, contract)
 
-
-
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(serializer.errors ,status=status.HTTP_400_BAD_REQUEST)
-        return Response({'error': '해당 계약서를 찾을 수 없습니다.'},status=status.HTTP_404_NOT_FOUND)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': '해당 계약서를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
     @staticmethod
     def get_html_from_url(url): # url을 이용해 html파일을 읽어온다
@@ -85,7 +79,8 @@ class ContractModifyView(APIView):
 
                 if before in html:   # 변경 전 문장을 html에서 탐색
                     html = html.replace(before,after) # 탐색이 되었다면, 해당 문장을 변경 후 문장으로 교체 후 재할당
-
+                # article.revision = True
+                # article.save()
             return html
 
         except Article.DoesNotExist:
@@ -95,12 +90,30 @@ class ContractModifyView(APIView):
             message = {"error": f"An error occurred while processing article: {str(e)}"}
             return Response(message, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @staticmethod
+    def upload_html_pdf_to_s3(html_content,contract):  # html이 문자열로 되어있는 것을 html파일로 만듬
+        try:
+            file_name = f'{uuid.uuid4()}.html'
 
+            contract.result.save(file_name, ContentFile(html_content.encode('utf-8')))
+            contract.save()
 
+            # html 업로드한 url
+            html_url = contract.result.url
 
+            pdfco_api_key = os.environ.get('PDFCO_API_KEY')
+            pdf_content = html_to_pdf_with_pdfco(pdfco_api_key, html_url)
+            if pdf_content:
+                pdf_file_name = f'{uuid.uuid4()}.pdf'
 
+                contract.result_url.save(pdf_file_name, ContentFile(pdf_content.read()))
+                contract.save()
 
-
+            return Response({'message': 'all sentence modified'}, status=status.HTTP_200_OK)
+        except UnicodeDecodeError as e:
+            return Response({'error': 'Unicode decode error: ' + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({'error': {e}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
