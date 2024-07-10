@@ -8,10 +8,10 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .modify_serializers import ContractUpdateSerializer, UpdatedContractSerializer
+from .serializers import ContractUpdateSerializer, UpdatedContractSerializer
 from .models import Contract, Article
 from drf_yasg.utils import swagger_auto_schema
-from .utils.pdf_to_html import html_to_pdf_with_pdfco
+from .utils.htmlToPdf import html_to_pdf_with_pdfco
 from dotenv import load_dotenv
 import requests
 
@@ -128,7 +128,7 @@ class ContractModifyView(APIView):
             return Response({'error': {e}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class UpdatedContractRead(APIView):
+class UpdatedContractReadView(APIView):
     @swagger_auto_schema(
         operation_description="수정된 계약서를 조회하는 Url을 반환해주는 API",
 

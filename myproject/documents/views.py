@@ -86,7 +86,7 @@ class DocumentUploadView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class DocumentRead(APIView):
+class DocumentReadView(APIView):
     @swagger_auto_schema(
         # 작업에 대한 설명
         operation_description="Retrieve a document by its ID",
@@ -125,7 +125,7 @@ class DocumentRead(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
 
-class DocumentChange(APIView):
+class DocumentChangeView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     @swagger_auto_schema(
@@ -186,6 +186,7 @@ class DocumentChange(APIView):
             'pdfUrl': f"https://{bucket_name}.s3.ap-northeast-2.amazonaws.com/{pdf_key}"  # S3 URL 형식에 맞게 수정
         }
         return Response(response_data, status=status.HTTP_200_OK)
+
 
 class DocumentAccessView(APIView):
 
