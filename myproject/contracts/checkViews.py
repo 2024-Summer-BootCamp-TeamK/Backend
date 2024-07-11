@@ -1,5 +1,6 @@
 import fitz
 from celery import chain
+from django.core.files.base import ContentFile
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -58,7 +59,7 @@ class UploadView(APIView):
             file_name = f'{uuid.uuid4()}.pdf'
 
             result = chain(
-                contract_origin_save.s(contract, file_name, pdf_file.read()),
+                contract_origin_save.s(contract.id, file_name, ContentFile(pdf_file.read())),
                 pdf_to_html_task.s(),
             ).apply_async()
 
