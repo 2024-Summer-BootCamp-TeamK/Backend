@@ -94,6 +94,6 @@ def pdf_to_text_and_openai(contract_id, pdf_url):
             articles.append(article_data)
 
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            raise Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     return articles

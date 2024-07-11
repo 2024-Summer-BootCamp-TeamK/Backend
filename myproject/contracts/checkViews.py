@@ -133,9 +133,9 @@ class ContractDetailView(APIView):
             html_url = contract.origin.url
 
             # 텍스트 추출 (celery)
-            uploaded_html_content = html_extract_content(html_url)
+            uploaded_html_content = html_extract_content(html_url).get()
 
-            articles = pdf_to_text_and_openai(contract.id, pdf_url)
+            articles = pdf_to_text_and_openai(contract.id, pdf_url).get()
 
             return Response({
                 'contractId': contract.id,
