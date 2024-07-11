@@ -14,7 +14,7 @@ from drf_yasg.utils import swagger_auto_schema
 from .utils.htmlToPdf import html_to_pdf_with_pdfco
 from dotenv import load_dotenv
 import requests
-
+from .utils.modifySentence import replace_and_generate_html
 
 load_dotenv()
 
@@ -88,7 +88,7 @@ class ContractModifyView(APIView):
                 after = article.recommend   # 변경 후 문장
 
                 if before in html:   # 변경 전 문장을 html에서 탐색
-                    html = html.replace(before,after) # 탐색이 되었다면, 해당 문장을 변경 후 문장으로 교체 후 재할당
+                    html = replace_and_generate_html(html,before,after) # 탐색이 되었다면, 해당 문장을 변경 후 문장으로 교체 후 재할당
                 article.revision = True # 수정여부 True로 변경
                 article.save()
             return html
