@@ -60,16 +60,17 @@ class UploadView(APIView):
             result = chain(
                 contract_origin_save.s(contract.id, file_name, pdf_file.read()),
                 pdf_to_html_task.s(),
-            )().get()
+            ).apply_async()
 
             return Response({
-                'contractId': contract.id
+                'contractId': contract.id,
+                'taskId': result.id
             }, status=status.HTTP_201_CREATED)
 
         except UnicodeDecodeError as e:
             return Response({'error': 'Unicode decode error: ' + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
-            return Response({'error': {e}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ContractDetailView(APIView):
@@ -132,9 +133,9 @@ class ContractDetailView(APIView):
             html_url = contract.origin.url
 
             # 텍스트 추출 (celery)
-            uploaded_html_content = html_extract_content(html_url)
+            uploaded_html_content = html_extract_content(html_url).get()
 
-            articles = pdf_to_text_and_openai(contract, pdf_url)
+            articles = pdf_to_text_and_openai(contract, pdf_url).get()
 
             return Response({
                 'contractId': contract.id,
