@@ -17,7 +17,7 @@ from .utils.pdfToHtml import pdf_to_html_with_pdfco
 @shared_task()
 def contract_origin_save(contract_id, pdf_file_name, pdf_content):
     contract = Contract.objects.get(id=contract_id)
-    contract.origin_url.save(pdf_file_name, pdf_content)
+    contract.origin_url.save(pdf_file_name, ContentFile(pdf_content))
     contract.save()
     if not contract.origin_url:
         raise ValueError("The file was not saved properly to `origin_url`.")
@@ -36,7 +36,6 @@ def pdf_to_html_task(contract_id):
 
     if html_content:
         html_file_name = f'{uuid.uuid4()}.html'
-
         contract.origin.save(html_file_name, ContentFile(html_content.encode('utf-8')))
         contract.save()
     return contract.id
