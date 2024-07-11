@@ -1,41 +1,49 @@
-from bs4 import BeautifulSoup
-import re
+import os
 
+import requests
+import json
 
-def remove_tags(html):
-    # BeautifulSoup을 사용하여 HTML 파싱
-    soup = BeautifulSoup(html, 'html.parser')
-    # 모든 태그 제거 후 텍스트 추출
-    text = soup.get_text(separator=' ', strip=True)
-    return text
+def replaceStringFromPdf(api_key, file_url, search_strings, replace_strings):
 
+    # api 엔드포인트
+    url = "https://api.pdf.co/v1/pdf/edit/replace-text"
 
-def replace_text(original_text, before, after):
-    # before 문자열을 찾아 after 문자열로 치환
-    # \b 를 사용하여 단어 경계를 설정하여 정확한 패턴을 찾도록 함
-    modified_text = re.sub(r'\b' + re.escape(before) + r'\b', after, original_text, flags=re.IGNORECASE)
-    return modified_text
+    # 아마존 S3 전체 링크
+    source_url = f'https://{os.getenv("AWS_STORAGE_BUCKET_NAME")}.s3.ap-northeast-2.amazonaws.com/{file_url}'
 
+    headers = {
+        "x-api-key": api_key,
+        "Content-Type": "application/json"
+    }
 
-def generate_html(original_html, modified_text):
-    # BeautifulSoup을 사용하여 HTML 파싱
-    soup = BeautifulSoup(original_html, 'html.parser')
-    # body 태그 안의 모든 내용을 추출
-    body_content = ''.join([str(tag) for tag in soup.body.contents])
-    # body 태그 안의 내용을 기존의 HTML 구조에 수정된 텍스트를 삽입하여 재구성
-    reconstructed_html = original_html.replace(body_content, modified_text)
-    return reconstructed_html
+    parameters = {
+        "name": "output.pdf",
+        "password": "",
+        "url": source_url,  # 아마존 pdf 주소(수정 전)
+        "searchStrings": search_strings,  # search_strings = ["Your Company Name", "Client Name", "Item"]
+        "replaceStrings": replace_strings,  # replace_strings = ["XYZ LLC", "ACME", "SKU"]
+        "replacementLimit": 0
+    }
 
+    response = requests.post(url, headers=headers, data=json.dumps(parameters))
 
-def replace_and_generate_html(html_string, before, after):
-    # 1. HTML에서 태그를 제거하고 순수 텍스트 추출
-    pure_text = remove_tags(html_string)
-    print(pure_text)
-    # 2. 특정 패턴 치환
-    modified_text = replace_text(pure_text, before, after)
-    print(modified_text)
-    # 3. 원본 HTML 구조를 유지하면서 HTML 재구성
-    reconstructed_html = generate_html(html_string, modified_text)
+    # 응답 내용을 출력하여 디버그
+    print("Response status code:", response.status_code)
+    print("Response text:", response.text)
 
-    return reconstructed_html
+    response.raise_for_status()
 
+    # JSON 응답에서 변환된 파일 URL 추출
+    result_json = response.json()
+    result_url = result_json.get('url')
+
+    if result_url:
+        # 변환된 파일 다운로드
+        download_response = requests.get(result_url)
+        download_response.raise_for_status()
+
+        with open('output.pdf', "wb") as pdf_file:
+            pdf_file.write(download_response.content)
+        return download_response.content
+    else:
+        print("Error: No URL found in the API response")
