@@ -60,10 +60,10 @@ class UploadView(APIView):
             result = chain(
                 contract_origin_save.s(contract.id, file_name, pdf_file.read()),
                 pdf_to_html_task.s(),
-            )().get()
+            ).apply_async()
 
             return Response({
-                'contractId': result
+                'contractId': contract.id
             }, status=status.HTTP_201_CREATED)
 
         except UnicodeDecodeError as e:
