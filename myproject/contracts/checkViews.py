@@ -58,14 +58,13 @@ class UploadView(APIView):
 
             file_name = f'{uuid.uuid4()}.pdf'
 
-            result = chain(
-                contract_origin_save.s(contract.id, file_name, pdf_file.read()),
-                pdf_to_html_task.s(),
-            ).apply_async()
+            contract.origin_url.save(file_name, ContentFile(pdf_file.read()))
+            contract.save()
+
+            pdf_to_html_task(contract.id)
 
             return Response({
-                'contractId': contract.id,
-                'taskId': result.id
+                'contractId': contract.id
             }, status=status.HTTP_201_CREATED)
 
         except UnicodeDecodeError as e:
