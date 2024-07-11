@@ -58,7 +58,7 @@ class UploadView(APIView):
             file_name = f'{uuid.uuid4()}.pdf'
 
             result = chain(
-                contract_origin_save.s(contract.id, file_name, pdf_file.read()),
+                contract_origin_save.s(contract, file_name, pdf_file.read()),
                 pdf_to_html_task.s(),
             ).apply_async()
 
