@@ -15,9 +15,9 @@ from .utils.pdfToHtml import pdf_to_html_with_pdfco
 
 
 @shared_task()
-def contract_origin_save(contract_id, html_file_name, pdf_content):
+def contract_origin_save(contract_id, pdf_file_name, pdf_content):
     contract = Contract.objects.get(id=contract_id)
-    contract.origin.save(html_file_name, ContentFile(pdf_content))
+    contract.origin_url.save(pdf_file_name, ContentFile(pdf_content))
     contract.save()
     return contract.id
 
