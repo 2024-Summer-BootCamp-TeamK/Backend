@@ -7,7 +7,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
-from .tasks import contract_origin_save, html_extract_content, pdf_to_text_and_openai, pdf_to_html_task
+from .tasks import contract_origin_save, html_extract_content, pdf_to_text_and_openai
 from .utils.pdfToHtml import pdf_to_html_with_pdfco
 from .models import Contract
 import uuid
@@ -59,9 +59,7 @@ class UploadView(APIView):
             file_name = f'{uuid.uuid4()}.pdf'
 
             contract.origin_url.save(file_name, ContentFile(pdf_file.read()))
-            contract.save()
 
-            pdf_to_html_task(contract.id)
 
             return Response({
                 'contractId': contract.id
@@ -133,9 +131,9 @@ class ContractDetailView(APIView):
             html_url = contract.origin.url
 
             # 텍스트 추출 (celery)
-            uploaded_html_content = html_extract_content(html_url).get()
+            uploaded_html_content = html_extract_content(html_url)
 
-            articles = pdf_to_text_and_openai(contract.id, pdf_url).get()
+            articles = pdf_to_text_and_openai(contract.id, pdf_url)
 
             return Response({
                 'contractId': contract.id,

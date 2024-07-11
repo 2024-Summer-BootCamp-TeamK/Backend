@@ -19,14 +19,7 @@ def contract_origin_save(contract_id, pdf_file_name, pdf_content):
     contract = Contract.objects.get(id=contract_id)
     contract.origin_url.save(pdf_file_name, ContentFile(pdf_content))
     contract.save()
-    if not contract.origin_url:
-        raise ValueError("The file was not saved properly to `origin_url`.")
-    return contract.id
 
-
-@shared_task()
-def pdf_to_html_task(contract_id):
-    contract = Contract.objects.get(id=contract_id)
     if not contract.origin_url:
         raise ValueError("The 'origin_url' attribute has no file associated with it.")
     pdf_url = contract.origin_url.url
@@ -38,6 +31,7 @@ def pdf_to_html_task(contract_id):
         html_file_name = f'{uuid.uuid4()}.html'
         contract.origin.save(html_file_name, ContentFile(html_content.encode('utf-8')))
         contract.save()
+
     return contract.id
 
 
