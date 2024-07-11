@@ -60,7 +60,7 @@ class UploadView(APIView):
             result = chain(
                 contract_origin_save.s(contract.id, file_name, pdf_file.read()),
                 pdf_to_html_task.s(),
-            ).apply_async()
+            )()
 
             return Response({
                 'contractId': contract.id
