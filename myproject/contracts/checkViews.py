@@ -188,7 +188,7 @@ class ContractDetailView(APIView):
                     article_data = {
                         "articleId": article_instance.id,
                         "sentence": article_instance.sentence,
-                        "type": parsed_result[i].get("type", []),
+                        "types": parsed_result[i].get("types", []),
                         "description": article_instance.description,
                         "law": article_instance.law,
                         "recommend": article_instance.recommend
