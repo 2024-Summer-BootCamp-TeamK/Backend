@@ -2,8 +2,7 @@ import os
 
 import requests
 import json
-
-from myproject.contracts.modifyViews import logger
+import logging
 
 
 def replaceStringFromPdf(api_key, file_url, search_strings, replace_strings):
@@ -23,6 +22,9 @@ def replaceStringFromPdf(api_key, file_url, search_strings, replace_strings):
         "replaceStrings": replace_strings,
         "replacementLimit": 0
     }
+    # Logging configuration
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
 
     response = requests.post(url, headers=headers, data=json.dumps(parameters))
     logger.debug("Response status code: %s", response.status_code)
