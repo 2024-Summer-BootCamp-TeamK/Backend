@@ -21,6 +21,7 @@ def contract_origin_save(contract_id, html_file_name, pdf_content):
     contract.save()
     return contract.id
 
+
 @shared_task()
 def pdf_to_html_task(contract_id):
     contract = Contract.objects.get(id=contract_id)
@@ -45,7 +46,7 @@ def html_extract_content(html_url):
 
 
 @shared_task()
-def pdf_to_text_and_openai(contract, pdf_url):
+def pdf_to_text_and_openai(contract_id, pdf_url):
     response = requests.get(pdf_url)
     pdf_content = response.content
 
@@ -62,15 +63,15 @@ def pdf_to_text_and_openai(contract, pdf_url):
     parsed_result = json.loads(raw_result)
     articles = []
     for i in range(len(parsed_result)):
-        article_data = {
-            "contract_id": contract.id,
+        article = {
+            "contract_id": contract_id,
             "sentence": parsed_result[i].get("sentence", ""),
             "description": parsed_result[i].get("description", ""),
             "law": parsed_result[i].get("law", ""),
             "recommend": parsed_result[i].get("recommend", "")
         }
         # 시리얼라이저를 이용해 데이터 저장
-        serializer = ArticleSerializer(data=article_data)
+        serializer = ArticleSerializer(data=article)
 
         if serializer.is_valid():
             article_instance = serializer.save()
@@ -88,7 +89,8 @@ def pdf_to_text_and_openai(contract, pdf_url):
                 "recommend": article_instance.recommend
             }
             articles.append(article_data)
-            return articles
+
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    return articles
