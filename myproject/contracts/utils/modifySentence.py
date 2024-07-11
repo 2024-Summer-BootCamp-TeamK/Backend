@@ -30,11 +30,12 @@ def generate_html(original_html, modified_text):
 def replace_and_generate_html(html_string, before, after):
     # 1. HTML에서 태그를 제거하고 순수 텍스트 추출
     pure_text = remove_tags(html_string)
-
+    print(pure_text)
     # 2. 특정 패턴 치환
     modified_text = replace_text(pure_text, before, after)
-
+    print(modified_text)
     # 3. 원본 HTML 구조를 유지하면서 HTML 재구성
     reconstructed_html = generate_html(html_string, modified_text)
 
     return reconstructed_html
+
