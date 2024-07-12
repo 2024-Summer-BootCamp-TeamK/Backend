@@ -11,7 +11,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.core.mail import EmailMessage
 from .utils import generate_password
-from .tasks import pdf_to_s3
+from .tasks import pdf_to_s3, upload_file_to_s3
 
 class DocumentUploadView(APIView):
     # 파일이나 폼 형태의 데이터를 처리해야하는 경우 필요!
@@ -52,7 +52,7 @@ class DocumentUploadView(APIView):
             return Response({'error': 'Email and PDF file are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # 고유한 파일 이름 생성
+            # 고유한 파일 이름 생성, uuid4 -> 랜덤 생성 방식
             file_name = f'{uuid.uuid4()}.pdf'
 
             # Document 객체 생성
@@ -61,6 +61,7 @@ class DocumentUploadView(APIView):
             # Document의 pdfUrl 필드에 upload_to 속성이 걸려있기 때문에 바로 ContentFile 형태로 저장해도 url로 저장됨
             # 이게 가능한 이유는 settings.py에서 default_file_storage로 s3를 지정해놨기때문!!
             #document.pdfUrl.save(file_name, ContentFile(pdfFile.read()))
+            upload_file_to_s3('lawbotttt',file_name,pdfFile.read())
             pdf_to_s3(document, file_name, ContentFile(pdfFile.read()))
 
             # Document 객체 저장
@@ -135,13 +136,15 @@ class DocumentChangeView(APIView):
                 'documentId',
                 openapi.IN_PATH,
                 description="ID of the Document",
-                type=openapi.TYPE_INTEGER
+                type=openapi.TYPE_INTEGER,
+                required=True
             ),
             openapi.Parameter(
                 'pdfFile',
                 openapi.IN_FORM,
                 description="PDF File",
-                type=openapi.TYPE_FILE
+                type=openapi.TYPE_FILE,
+                required=True
             )
         ],
         responses={
@@ -155,7 +158,9 @@ class DocumentChangeView(APIView):
             404: 'Document not found.'
         }
     )
-    def put(self, request, documentId):
+    def put(self, request, *args, **kwargs):
+        documentId = kwargs.get('documentId')
+
         if not documentId:
             return Response({'error': 'Document ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -166,7 +171,6 @@ class DocumentChangeView(APIView):
         if not uploaded_file:
             return Response({'error': 'No PDF file was uploaded.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        s3 = boto3.client('s3')
         bucket_name = 'lawbotttt'
         # 기존 pdfUrl에서 파일 경로를 추출
         pdf_key = document.pdfUrl.name
@@ -177,16 +181,20 @@ class DocumentChangeView(APIView):
 
         try:
             # S3에 새로운 파일 업로드
-            s3.put_object(Bucket=bucket_name, Key=pdf_key, Body=uploaded_file.read(), ContentType='application/pdf')
-        except Exception as e:
-            return Response({'error': 'Failed to upload new PDF file to S3.', 'details': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        #   s3.put_object(Bucket=bucket_name, Key=pdf_key, Body=uploaded_file.read(), ContentType='application/pdf')
+        #except Exception as e:
+        #    return Response({'error': 'Failed to upload new PDF file to S3.', 'details': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # S3에 새로운파일 업로드 비동기 태스크 호출
+            result = upload_file_to_s3.delay(bucket_name, pdf_key, uploaded_file.read())
 
         # pdfUrl을 포함한 응답 데이터를 생성하고, 클라이언트에게 반환
-        response_data = {
-            'pdfUrl': f"https://{bucket_name}.s3.ap-northeast-2.amazonaws.com/{pdf_key}"  # S3 URL 형식에 맞게 수정
-        }
-        return Response(response_data, status=status.HTTP_200_OK)
-
+            response_data = {
+                'task_id': result.id,
+                'pdfUrl': f"https://{bucket_name}.s3.ap-northeast-2.amazonaws.com/{pdf_key}"  # S3 URL 형식에 맞게 수정
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class DocumentAccessView(APIView):
 
