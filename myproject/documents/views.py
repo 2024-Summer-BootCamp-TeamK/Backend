@@ -126,6 +126,9 @@ class DocumentReadView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
 
+import logging
+
+logger = logging.getLogger(__name__)
 class DocumentChangeView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -151,7 +154,8 @@ class DocumentChangeView(APIView):
             200: openapi.Response('Document modified successfully', openapi.Schema(
                 type=openapi.TYPE_OBJECT,
                 properties={
-                    'pdfUrl': openapi.Schema(type=openapi.TYPE_STRING, description='URL of the updated PDF file')
+                    'pdfUrl': openapi.Schema(type=openapi.TYPE_STRING, description='URL of the updated PDF file'),
+                    'task_id': openapi.Schema(type=openapi.TYPE_STRING, description='ID of the asynchronous task')
                 }
             )),
             400: 'Bad request. Missing document ID or PDF file.',
@@ -166,35 +170,30 @@ class DocumentChangeView(APIView):
 
         document = get_object_or_404(Document, pk=documentId)
 
-        # 클라이언트로부터 전송된 파일을 가져오기
         uploaded_file = request.FILES.get('pdfFile')
         if not uploaded_file:
             return Response({'error': 'No PDF file was uploaded.'}, status=status.HTTP_400_BAD_REQUEST)
 
         bucket_name = 'lawbotttt'
-        # 기존 pdfUrl에서 파일 경로를 추출
         pdf_key = document.pdfUrl.name
 
-        # pdf_key에 중복되는 'documents/'를 제거
         if pdf_key.startswith('documents/documents/'):
             pdf_key = pdf_key.replace('documents/documents/', 'documents/', 1)
 
+        logger.info(f'pdf_key: {pdf_key}')
+
         try:
-            # S3에 새로운 파일 업로드
-        #   s3.put_object(Bucket=bucket_name, Key=pdf_key, Body=uploaded_file.read(), ContentType='application/pdf')
-        #except Exception as e:
-        #    return Response({'error': 'Failed to upload new PDF file to S3.', 'details': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        # S3에 새로운파일 업로드 비동기 태스크 호출
             result = upload_file_to_s3.delay(bucket_name, pdf_key, uploaded_file.read())
 
-        # pdfUrl을 포함한 응답 데이터를 생성하고, 클라이언트에게 반환
             response_data = {
                 'task_id': result.id,
-                'pdfUrl': f"https://{bucket_name}.s3.ap-northeast-2.amazonaws.com/{pdf_key}"  # S3 URL 형식에 맞게 수정
+                'pdfUrl': f"https://{bucket_name}.s3.ap-northeast-2.amazonaws.com/{pdf_key}"
             }
             return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 class DocumentAccessView(APIView):
 

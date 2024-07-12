@@ -116,7 +116,7 @@ DATABASES = {
         'NAME': os.getenv('MYSQL_DATABASE'),
         'USER': os.getenv('MYSQL_USER'),
         'PASSWORD': os.getenv('MYSQL_PASSWORD'),
-        'HOST': 'mysqldb',  # 추후 장고도 도커에 띄우면 mysqldb로 변경
+        'HOST': 'localhost',  # 추후 장고도 도커에 띄우면 mysqldb로 변경
         'PORT': '3306',
     }
 }
@@ -184,9 +184,10 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 # Celery 메세지 브로커 설정 -> CELERY_BROKER_URL이 .env에 없음
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
 
-CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+# Redis 브로커 URL과 결과 백엔드를 설정
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
