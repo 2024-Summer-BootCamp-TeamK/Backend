@@ -177,8 +177,13 @@ class DocumentChangeView(APIView):
         bucket_name = 'lawbotttt'
         pdf_key = document.pdfUrl.name
 
-        if pdf_key.startswith('documents/documents/'):
-            pdf_key = pdf_key.replace('documents/documents/', 'documents/', 1)
+        # 중복된 'documents/' 경로 제거
+        pdf_key_parts = pdf_key.split('/')
+        unique_pdf_key_parts = []
+        for part in pdf_key_parts:
+            if part != 'documents' or (part == 'documents' and len(unique_pdf_key_parts) == 0):
+                unique_pdf_key_parts.append(part)
+        pdf_key = '/'.join(unique_pdf_key_parts)
 
         logger.info(f'pdf_key: {pdf_key}')
 
