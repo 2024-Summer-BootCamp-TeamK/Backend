@@ -36,7 +36,10 @@ def process_and_convert_pdf(url: str, replacement_map: dict) -> bytes:
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"PDF 다운로드 중 오류 발생: {e}")
 
-    download_pdf_from_s3(url, pdf_file)
+    source_url = f'https://{os.getenv("AWS_STORAGE_BUCKET_NAME")}.s3.ap-northeast-2.amazonaws.com/{url}'
+
+
+    download_pdf_from_s3(source_url, pdf_file)
 
     # PDF 파일이 존재하는지 확인
     if not os.path.isfile(pdf_file):

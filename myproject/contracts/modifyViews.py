@@ -96,7 +96,7 @@ class ContractModifyView(APIView):
                 if article:
                     search_replace_map[article.sentence] = article.recommend  # 딕셔너리에 추가
 
-            modified_pdf = process_and_convert_pdf(origin_pdf_url,search_replace_map)
+            modified_pdf = process_and_convert_pdf(origin_pdf_url, search_replace_map)
 
             if modified_pdf:
                 pdf_file_name = f'{uuid.uuid4()}.pdf'
