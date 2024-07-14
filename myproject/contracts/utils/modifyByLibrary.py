@@ -1,12 +1,12 @@
-import os
 import re
-from pdf2docx import Converter
-from docx import Document
-import requests
-from dotenv import load_dotenv
 from kiwipiepy import Kiwi
 from docx2pdf import convert
-import io
+import groupdocs_conversion_cloud
+from shutil import copyfile
+import requests
+import os
+from dotenv import load_dotenv
+from docx import Document
 
 load_dotenv()
 
@@ -38,17 +38,61 @@ def process_and_convert_pdf(url: str, replacement_map: dict) -> bytes:
 
     source_url = f'https://{os.getenv("AWS_STORAGE_BUCKET_NAME")}.s3.ap-northeast-2.amazonaws.com/{url}'
 
-
     download_pdf_from_s3(source_url, pdf_file)
 
     # PDF 파일이 존재하는지 확인
     if not os.path.isfile(pdf_file):
         raise FileNotFoundError(f"PDF 파일을 찾을 수 없습니다: {pdf_file}")
 
-    # PDF를 Word로 변환
-    cv = Converter(pdf_file)
-    cv.convert(docx_file, start=0, end=None)  # 모든 페이지 변환
-    cv.close()
+    try:
+        # Get your app_sid and app_key at https://dashboard.groupdocs.cloud (free registration is required).
+        app_sid = "8eb0beac-e3aa-418c-b460-eb1f7ccc895a"
+        app_key = "1e8044e26747bf9a23a75b56ea5cdb62"
+
+        # Create instance of the API
+        convert_api = groupdocs_conversion_cloud.ConvertApi.from_keys(app_sid, app_key)
+        file_api = groupdocs_conversion_cloud.FileApi.from_keys(app_sid, app_key)
+
+        # upload soruce file to storage
+        filename = 'downloaded.pdf'
+        remote_name = 'input.pdf'
+        output_name = 'modified.docx'
+        strformat = 'docx'
+
+        request_upload = groupdocs_conversion_cloud.UploadFileRequest(remote_name, filename)
+        response_upload = file_api.upload_file(request_upload)
+
+        # Convert PDF to DOCX
+        settings = groupdocs_conversion_cloud.ConvertSettings()
+        settings.file_path = remote_name
+        settings.format = strformat
+        settings.output_path = output_name
+
+        loadOptions = groupdocs_conversion_cloud.PdfLoadOptions()
+        loadOptions.hide_pdf_annotations = True
+        loadOptions.remove_embedded_files = False
+        loadOptions.flatten_all_fields = True
+
+        settings.load_options = loadOptions
+
+        convertOptions = groupdocs_conversion_cloud.DocxConvertOptions()
+        convertOptions.from_page = 1
+        convertOptions.pages_count = 20
+
+        settings.convert_options = convertOptions
+
+        request = groupdocs_conversion_cloud.ConvertDocumentRequest(settings)
+        response = convert_api.convert_document(request)
+        print("Document converted successfully: " + str(response))
+
+        # Download Document from Storage
+        request_download = groupdocs_conversion_cloud.DownloadFileRequest(output_name)
+        response_download = file_api.download_file(request_download)
+        docx_file = 'sample_copy.docx'
+        copyfile(response_download, docx_file)
+        print("Result {}".format(response_download))
+    except groupdocs_conversion_cloud.ApiException as e:
+        print("Exception when calling get_supported_conversion_types:")
 
     # 변환된 Word 파일 열기
     doc = Document(docx_file)
