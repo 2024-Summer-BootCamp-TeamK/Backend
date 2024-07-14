@@ -181,8 +181,6 @@ class DocumentChangeView(APIView):
                 unique_pdf_key_parts.append(part)
         pdf_key = '/'.join(unique_pdf_key_parts)
 
-        logger.info(f'pdf_key: {pdf_key}')
-
         try:
             result = upload_file_to_s3.delay(bucket_name, pdf_key, uploaded_file.read())
 
