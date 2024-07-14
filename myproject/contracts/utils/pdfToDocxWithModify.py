@@ -11,7 +11,7 @@ from .docxUpload import docx_upload
 load_dotenv()
 
 
-def pdf_convert_docx(api_key, url: str, replacement_map: dict) -> bytes:
+def pdf_convert_docx(url: str, replacement_map: dict) -> bytes:
     """
     S3에서 PDF를 다운로드하고, 텍스트 교체 후 Word로 변환하고, 최종적으로 PDF로 변환하여 반환합니다.
 
