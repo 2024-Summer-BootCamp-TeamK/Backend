@@ -1,17 +1,17 @@
 import re
 from kiwipiepy import Kiwi
-from docx2pdf import convert
 import groupdocs_conversion_cloud
 from shutil import copyfile
 import requests
 import os
 from dotenv import load_dotenv
 from docx import Document
+from .docxUpload import docx_upload
 
 load_dotenv()
 
 
-def process_and_convert_pdf(url: str, replacement_map: dict) -> bytes:
+def pdf_convert_docx(api_key, url: str, replacement_map: dict) -> bytes:
     """
     S3에서 PDF를 다운로드하고, 텍스트 교체 후 Word로 변환하고, 최종적으로 PDF로 변환하여 반환합니다.
 
@@ -121,14 +121,11 @@ def process_and_convert_pdf(url: str, replacement_map: dict) -> bytes:
 
     # 자동 띄어쓰기가 적용된 Word 파일 저장
     doc.save(corrected_docx_file)
+    uploaded_file_key = docx_upload(corrected_docx_file)
 
-    # Word 파일을 PDF로 변환
-    pdf_file_output = 'output_corrected.pdf'
-    convert(corrected_docx_file, pdf_file_output)
-    print(f"Word 파일이 PDF로 변환되어 {pdf_file_output}에 저장되었습니다.")
-
-    # 변환된 PDF 파일 읽기
-    with open(pdf_file_output, 'rb') as pdf_file:
-        pdf_data = pdf_file.read()
-
-    return pdf_data
+    if uploaded_file_key:
+        print(f'업로드된 파일의 S3 경로: {uploaded_file_key}')
+        # 여기서 필요한 작업을 수행 (예: 다운로드 URL 생성 또는 다른 처리 등)
+        return uploaded_file_key
+    else:
+        print('파일 업로드 실패')

@@ -29,8 +29,8 @@ def html_to_pdf_with_pdfco(api_key, file_url):
     response = requests.post(url, headers=headers, data=json.dumps(parameters))
 
     # 응답 내용을 출력하여 디버그
-    print("Response status code:", response.status_code)
-    print("Response text:", response.text)
+    print("htmlToPdf.Response status code:", response.status_code)
+    print("htmlToPdf.Response text:", response.text)
 
     response.raise_for_status()
 

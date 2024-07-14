@@ -14,9 +14,9 @@ from .models import Contract, Article
 from drf_yasg.utils import swagger_auto_schema
 from dotenv import load_dotenv
 from requests import HTTPError
-from .utils.modifyByLibrary import process_and_convert_pdf
+from .utils.pdfToDocxWithModify import pdf_convert_docx
 from .utils.pdfToHtml import pdf_to_html_with_pdfco
-
+from .utils.docxToPdf import docx_to_pdf
 load_dotenv()
 
 PDFCO_API_KEY = os.getenv('PDFCO_API_KEY')
@@ -96,7 +96,12 @@ class ContractModifyView(APIView):
                 if article:
                     search_replace_map[article.sentence] = article.recommend  # 딕셔너리에 추가
 
-            modified_pdf = process_and_convert_pdf(origin_pdf_url, search_replace_map)
+            # 수정사항 적용된 docx파일
+            # ex: docx/df2e61b8-13bb-4a01-b7db-b82a3c113bc2.docx
+            docx_url = pdf_convert_docx(origin_pdf_url, search_replace_map)
+
+            # docx를 pdf로 변환
+            modified_pdf = docx_to_pdf(PDFCO_API_KEY, docx_url)
 
             if modified_pdf:
                 pdf_file_name = f'{uuid.uuid4()}.pdf'
