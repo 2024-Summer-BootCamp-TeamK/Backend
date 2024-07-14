@@ -181,8 +181,6 @@ class DocumentChangeView(APIView):
                 unique_pdf_key_parts.append(part)
         pdf_key = '/'.join(unique_pdf_key_parts)
 
-        s3 = boto3.client('s3')
-
         try:
             result = upload_file_to_s3.delay(bucket_name, pdf_key, uploaded_file.read())
 
