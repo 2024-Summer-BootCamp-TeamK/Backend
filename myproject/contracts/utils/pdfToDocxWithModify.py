@@ -119,8 +119,13 @@ def pdf_convert_docx(url: str, replacement_map: dict) -> bytes:
         if not changed:
             paragraph.text = kiwi.space(paragraph.text)
 
+    # 자동 띄어쓰기가 적용된 Word 파일 내용 출력
+    for paragraph in doc.paragraphs:
+        print(paragraph.text)
+
     # 자동 띄어쓰기가 적용된 Word 파일 저장
     doc.save(corrected_docx_file)
+
     uploaded_file_key = docx_upload(corrected_docx_file)
 
     if uploaded_file_key:
