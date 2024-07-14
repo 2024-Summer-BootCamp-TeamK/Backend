@@ -184,16 +184,10 @@ class DocumentChangeView(APIView):
         s3 = boto3.client('s3')
 
         try:
-            #result = upload_file_to_s3.delay(bucket_name, pdf_key, uploaded_file.read())
-            s3.put_object(
-                Bucket=bucket_name,
-                Key=pdf_key,
-                Body=uploaded_file.read(),
-                ContentType='application/pdf',
-                ContentDisposition='inline'
-            )
+            result = upload_file_to_s3.delay(bucket_name, pdf_key, uploaded_file.read())
+
             response_data = {
-                #'task_id': result.id,
+                'task_id': result.id,
                 'pdfUrl': f"https://{bucket_name}.s3.ap-northeast-2.amazonaws.com/{pdf_key}"
             }
             return Response(response_data, status=status.HTTP_200_OK)
