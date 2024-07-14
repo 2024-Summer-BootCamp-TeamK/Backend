@@ -1,7 +1,9 @@
+# documents/consumers.py
+
 import json
 from channels.generic.websocket import WebsocketConsumer
 
-class PDFViewerConsumer(WebsocketConsumer):
+class DocumentConsumer(WebsocketConsumer):
     def connect(self):
         self.accept()
 
@@ -10,7 +12,6 @@ class PDFViewerConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         data = json.loads(text_data)
-        self.send(text_data=json.dumps(data))
         self.channel_layer.group_send(
             "pdf_viewer_group",
             {
