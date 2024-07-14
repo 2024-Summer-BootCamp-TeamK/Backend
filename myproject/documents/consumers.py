@@ -13,14 +13,14 @@ class DocumentConsumer(WebsocketConsumer):
     def receive(self, text_data):
         data = json.loads(text_data)
         self.channel_layer.group_send(
-            "pdf_viewer_group",
+            "document_%s" % self.scope['url_route']['kwargs']['document_id'],
             {
-                "type": "pdf_viewer_message",
+                "type": "document.message",
                 "message": data
             }
         )
 
-    def pdf_viewer_message(self, event):
+    def document_message(self, event):
         message = event['message']
         self.send(text_data=json.dumps({
             'message': message
