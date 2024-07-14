@@ -105,13 +105,14 @@ def pdf_convert_docx(url: str, replacement_map: dict) -> bytes:
         re.sub(r'\s+', '', k): re.sub(r'\s+', '', v) for k, v in replacement_map.items()
     }
 
-    # 원하는 문장을 교체하고, 자동 띄어쓰기 적용
+    # 원본 문서의 각 문단에서 공백과 줄바꿈을 제거하여 비교 및 교체
     for paragraph in doc.paragraphs:
         normalized_paragraph = re.sub(r'\s+', '', paragraph.text)
         changed = False
         for before, after in replacement_map_normalized.items():
-            if before in normalized_paragraph:
-                corrected_paragraph = normalized_paragraph.replace(before, after)
+            normalized_before = re.sub(r'\s+', '', before)
+            if normalized_before in normalized_paragraph:
+                corrected_paragraph = normalized_paragraph.replace(normalized_before, after)
                 corrected_text = kiwi.space(corrected_paragraph)
                 paragraph.text = corrected_text
                 changed = True
