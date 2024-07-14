@@ -14,8 +14,7 @@ from .models import Contract, Article
 from drf_yasg.utils import swagger_auto_schema
 from dotenv import load_dotenv
 from requests import HTTPError
-
-from .utils.modifySentence import replaceStringFromPdf
+from .utils.modifyByLibrary import process_and_convert_pdf
 from .utils.pdfToHtml import pdf_to_html_with_pdfco
 
 load_dotenv()
@@ -51,7 +50,7 @@ class ContractModifyView(APIView):
                 contract.save()
                 return Response(status=status.HTTP_200_OK)
 
-            self.modify_pdf2pdf(contract, article_ids)
+            self.modify_pdf2docx2pdf(contract, article_ids)
             self.upload_modified_html(contract)
 
             contract.updated_at = timezone.now()
@@ -85,22 +84,20 @@ class ContractModifyView(APIView):
             return Response({'error': f'Other error occurred: {str(err)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @staticmethod
-    def modify_pdf2pdf(contract, article_ids):
+    def modify_pdf2docx2pdf(contract, article_ids):
         try:
             origin_pdf_url = contract.origin_url
             logger.debug("Origin PDF URL: %s", origin_pdf_url)
-            search_strings, replace_strings = [], []
+
+            search_replace_map = {}  # 딕셔너리 초기화
 
             for article_id in article_ids:
                 article = Article.objects.filter(id=article_id).first()
                 if article:
-                    search_strings.append(article.sentence)
-                    replace_strings.append(article.recommend)
+                    search_replace_map[article.sentence] = article.recommend  # 딕셔너리에 추가
 
-            logger.debug("Search Strings: %s", search_strings)
-            logger.debug("Replace Strings: %s", replace_strings)
+            modified_pdf = process_and_convert_pdf(origin_pdf_url,search_replace_map)
 
-            modified_pdf = replaceStringFromPdf(PDFCO_API_KEY, origin_pdf_url, search_strings, replace_strings)
             if modified_pdf:
                 pdf_file_name = f'{uuid.uuid4()}.pdf'
                 contract.result_url.save(pdf_file_name, ContentFile(modified_pdf))
@@ -118,6 +115,8 @@ class ContractModifyView(APIView):
         except Exception as err:
             logger.error("Error: %s", str(err))
             return Response({'error': f'Other error occurred: {str(err)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 
 class UpdatedContractReadView(APIView):

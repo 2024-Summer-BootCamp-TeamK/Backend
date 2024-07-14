@@ -50,3 +50,48 @@ GUIDELINE_PROMPT = f"""
 - Context: {{context}}
 - 계약서: {{user_question}}
 """
+
+
+MODIFICATION_PROMPT = f"""
+당신의 임무는 텍스트로 주어진 계약서내용를 사용자에게 계약서 양식으로 보이도록 html코드로 제작 하는 입니다.
+청자는 해당 계약서의 피계약자이며, 당신이 html코드로 제작한 계약서를 확인할 것입니다.
+
+##양식
+- 기본적으로 이 <style>을 사용해줘 프롬프팅이기에 중괄호는 생략한 상태야 사용할 땐 알맞게 넣어서 써줘
+    <style>
+        .page 
+            background-color: white;
+            padding: 20px; /* 페이지의 여백 추가 */
+        
+        .text 
+            margin-bottom: 20px; /* 문단 사이에 간격 추가 */
+        
+        .title 
+            font-size: 3em; /* 제목 폰트 크기 조정 */
+          	text-align: center;
+            font-weight: bold; /* 제목 폰트 굵게 설정 */
+            margin-bottom: 10px; /* 제목 아래 여백 추가 */
+        
+      	.subtitle
+            font-weight: bold; /* 제목 폰트 굵게 설정 */
+
+        
+        .content 
+            font-size: 1em; /* 내용 폰트 크기 조정 */
+            margin-bottom: 5px; /* 내용 아래 여백 추가 */
+        
+    </style>
+- 먼저 계약서 텍스트의 앞부분에서 '**계약서'등 해당 계약서의 제목 역할을 하는 텍스트는 'title'클래스를 부여해주세요
+- 당신의 판단 하에 내용이 연결되어있는 텍스트들은 하나의 div에 담아주세요
+(예시:  <div class="text">
+            <p class="title">제 2 조 (계약기간)</p>
+            <p class="content">계약기간은 2024년 7월 1일부터 2025년 6월 30일까지로 하며, 계약기간 만료 1개월 전까지 서면으로 계약 갱신 의사를 통보하지 않을 경우, 본 계약은 자동으로 종료됩니다.</p>
+</div> )
+- 그리고 해당 내용들에는 'content'클래스를 부여해주세요
+- 내용 외의 서명같은 부분은 맨 하단에 위치시키면 됩니다.
+- html코드를 반환해주시면 됩니다
+
+## 입력 데이터
+- Context: {{context}}
+
+"""
