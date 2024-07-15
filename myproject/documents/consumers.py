@@ -1,27 +1,36 @@
-# documents/consumers.py
-
 import json
-from channels.generic.websocket import WebsocketConsumer
+from channels.generic.websocket import AsyncWebsocketConsumer
 
-class DocumentConsumer(WebsocketConsumer):
-    def connect(self):
-        self.accept()
+class DocumentConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.document_id = self.scope['url_route']['kwargs']['documentId']
+        self.document_group_name = f'document_{self.document_id}'
 
-    def disconnect(self, close_code):
-        pass
+        await self.channel_layer.group_add(
+            self.document_group_name,
+            self.channel_name
+        )
 
-    def receive(self, text_data):
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(
+            self.document_group_name,
+            self.channel_name
+        )
+
+    async def receive(self, text_data):
         data = json.loads(text_data)
-        self.channel_layer.group_send(
-            "document_%s" % self.scope['url_route']['kwargs']['document_id'],
+        await self.channel_layer.group_send(
+            self.document_group_name,
             {
-                "type": "document.message",
+                "type": "document_message",
                 "message": data
             }
         )
 
-    def document_message(self, event):
+    async def document_message(self, event):
         message = event['message']
-        self.send(text_data=json.dumps({
+        await self.send(text_data=json.dumps({
             'message': message
         }))
