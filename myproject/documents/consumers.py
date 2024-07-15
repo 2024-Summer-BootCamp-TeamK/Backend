@@ -47,3 +47,12 @@ class DocumentConsumer(AsyncWebsocketConsumer):
             'type': 'scroll',
             'payload': payload
         }))
+
+    async def document_mouse_move(self, event):
+        payload = event['payload']
+
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps({
+            'type': 'mouse_move',
+            'payload': payload
+        }))
