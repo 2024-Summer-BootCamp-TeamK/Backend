@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'storages',
     'channels',
     'corsheaders',
+    'django_celery_beat',
 ]
 
 CHANNEL_LAYERS = {
@@ -183,12 +184,20 @@ EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
-# Celery 메세지 브로커 설정 -> CELERY_BROKER_URL이 .env에 없음
+# Celery 메세지 브로커 설정
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
 
 # Redis 브로커 URL과 결과 백엔드를 설정
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
+#CELERY_RESULT_SERIALIZER = 'json'
+
+# Celery에서 스케줄링 시 사용할 시간대를 지정
+# UTC(세계 협정 시)를 사용 X, Seoul의 시간대를 사용
+CELERY_TIMEZONE = 'Asia/Seoul'
+CELERY_ENABLE_UTC = False
+
+# Celery-beat의 작업 스케줄을 데이터베이스에서 읽고 실행
+CELERY_BEAT_SCHEDULE = 'django_celery_beat.schedulers:DatabaseScheduler'
+
