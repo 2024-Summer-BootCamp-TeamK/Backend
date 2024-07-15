@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -193,11 +194,18 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 #CELERY_RESULT_SERIALIZER = 'json'
 
+CELERY_BEAT_SCHEDULE = {
+    'delete_expired_files_every_week': {
+        'task': 'myproject.tasks.delete_expired_files',
+        'schedule': crontab(0, 0, day_of_week='mon'),
+    }
+}
+
 # Celery에서 스케줄링 시 사용할 시간대를 지정
 # UTC(세계 협정 시)를 사용 X, Seoul의 시간대를 사용
 CELERY_TIMEZONE = 'Asia/Seoul'
 CELERY_ENABLE_UTC = False
 
 # Celery-beat의 작업 스케줄을 데이터베이스에서 읽고 실행
-CELERY_BEAT_SCHEDULE = 'django_celery_beat.schedulers:DatabaseScheduler'
+#CELERY_BEAT_SCHEDULE = 'django_celery_beat.schedulers:DatabaseScheduler'
 

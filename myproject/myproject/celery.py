@@ -14,13 +14,11 @@ app = Celery('myproject')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Django 앱에서 task를 자동으로 발견
-# lambda 함수를 통해 Django 설정에서 설치된 모든 앱을 가져와
-# 각 앱의 작업을 실행할 수 있도록 작업을 찾음
-app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
-    'delete_expired_files': {
+    'delete_expired_files_every_week': {
         'task': 'myproject.tasks.delete_expired_file',
-        'schedule': crontab(hour=0),
+        'schedule': crontab(0, 0, day_of_week='mon'),
     },
 }
