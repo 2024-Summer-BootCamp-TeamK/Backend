@@ -16,9 +16,3 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Django 앱에서 task를 자동으로 발견
 app.autodiscover_tasks()
 
-app.conf.beat_schedule = {
-    'delete_expired_files_every_week': {
-        'task': 'myproject.tasks.delete_expired_file',
-        'schedule': crontab(0, 0, day_of_week='mon'),
-    },
-}
