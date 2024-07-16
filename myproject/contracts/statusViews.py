@@ -1,28 +1,14 @@
 from multiprocessing.pool import AsyncResult
 from django.http import JsonResponse
+from rest_framework.views import APIView
 
+class TaskStatusView(APIView):
 
-def task_status(request, task_id):
-    task = AsyncResult(task_id)
-
-    if task.state == 'PENDING':
+    def task_status(request, task_id):
+        task = AsyncResult(task_id)
         response = {
-            'state': task.state,
-            'status': 'Pending...'
-        }
-    elif task.state == 'SUCCESS':
-        response = {
-            'state': task.state,
+            'task_id': task_id,
+            'status': task.status,
             'result': task.result
         }
-    elif task.state == 'FAILURE':
-        response = {
-            'state': task.state,
-            'status': str(task.info),  # 예외 정보
-        }
-    else:
-        response = {
-            'state': task.state,
-            'status': 'Processing...'
-        }
-    return JsonResponse(response)
+        return JsonResponse(response)
