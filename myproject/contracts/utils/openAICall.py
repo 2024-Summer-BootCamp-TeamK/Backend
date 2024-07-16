@@ -77,7 +77,7 @@ def analyze_contract(contract_text, prompt):
     context = " ".join(refined_search_results)
 
     # OpenAI 모델 설정
-    llm = ChatOpenAI(model_name="gpt-3.5-turbo", openai_api_key=OPENAI_API_KEY)
+    llm = ChatOpenAI(model_name="gpt-4-turbo", openai_api_key=OPENAI_API_KEY)
     prompt_template = PromptTemplate(
         input_variables=["context", "user_question"],
         template=prompt
