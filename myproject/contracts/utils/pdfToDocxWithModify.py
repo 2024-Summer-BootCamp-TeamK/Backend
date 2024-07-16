@@ -25,7 +25,7 @@ def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
     # PDF 파일의 로컬 경로 설정
 
     pdf_file = f'{uuid.uuid4()}.pdf'
-    docx_file = f'output{uuid.uuid4()}.docx'
+    docx_file = f'{uuid.uuid4()}.docx'
 
     corrected_docx_file = 'output_corrected.docx'
 
@@ -60,7 +60,7 @@ def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
         # upload soruce file to storage
         filename = pdf_file
         remote_name = pdf_file
-        output_name = f'{uuid.uuid4()}.docx'
+        output_name = docx_file
         strformat = 'docx'
 
         request_upload = groupdocs_conversion_cloud.UploadFileRequest(remote_name, filename)
@@ -148,7 +148,7 @@ def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
         # 수정된 문서 저장
         corrected_doc_path = f'corrected_{uuid.uuid4()}' + doc_path
         new_doc.save(corrected_doc_path)
-        print(f"문서가 성공적으로 저장되었습니다: {corrected_doc_path}")
+        print(f"pdfToDocxWithModify.문서가 성공적으로 저장되었습니다: {corrected_doc_path}")
         return corrected_doc_path
 
     # 문장 대체 함수 호출
@@ -157,7 +157,7 @@ def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
     uploaded_file_key = docx_upload(result)
 
     if uploaded_file_key:
-        print(f'업로드된 파일의 S3 경로: {uploaded_file_key}')
+        print(f'pdfToDocxWithModify.업로드된 파일의 S3 경로: {uploaded_file_key}')
         # 여기서 필요한 작업을 수행 (예: 다운로드 URL 생성 또는 다른 처리 등)
         return uploaded_file_key
     else:

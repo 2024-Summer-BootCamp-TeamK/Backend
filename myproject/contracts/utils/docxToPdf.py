@@ -12,7 +12,7 @@ def docx_to_pdf(api_key, file_url):
     try:
 
         source_url = f"https://lawbotttt.s3.ap-northeast-2.amazonaws.com/{file_url}"
-
+        print("\ndocxToPdf.source_url: ", source_url)
         # 파일 다운로드
         response = requests.get(source_url)
         response.raise_for_status()  # HTTP 오류가 발생한 경우 예외 발생
