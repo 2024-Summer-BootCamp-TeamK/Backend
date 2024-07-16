@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 
 class TaskStatusView(APIView):
 
-    def task_status(request, task_id):
+    def get(self, request, task_id):
         task = AsyncResult(task_id)
         response = {
             'task_id': task_id,
