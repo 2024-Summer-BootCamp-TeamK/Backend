@@ -173,7 +173,6 @@ class ContractDetailView(APIView):
                     "sentence": parsed_result[i].get("sentence", ""),
                     "description": parsed_result[i].get("description", ""),
                     "law": parsed_result[i].get("law", ""),
-                    "recommend": parsed_result[i].get("recommend", "")
                 }
                 # 시리얼라이저를 이용해 데이터 저장
                 serializer = ArticleSerializer(data=article_data)
@@ -181,14 +180,12 @@ class ContractDetailView(APIView):
                 if serializer.is_valid():
                     article_instance = serializer.save()
 
-                    for type_name in parsed_result[i]["types"]:
-                         type_instance = Type.objects.get(name=type_name)
-                         article_instance.type.add(type_instance)
+                    type_instance = Type.objects.get(name="main")
+                    article_instance.type.add(type_instance)
 
                     article_data = {
                         "articleId": article_instance.id,
                         "sentence": article_instance.sentence,
-                        "types": parsed_result[i].get("types", []),
                         "description": article_instance.description,
                         "law": article_instance.law,
                         "recommend": article_instance.recommend
@@ -200,6 +197,7 @@ class ContractDetailView(APIView):
             return Response({
                 'contractId': contract.id,
                 'contract': uploaded_html_content,
+                'type': contract.type,
                 'articles': articles
             }, status=status.HTTP_200_OK)
 

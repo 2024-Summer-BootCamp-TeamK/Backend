@@ -15,8 +15,8 @@ class UpdatedContractSerializer(serializers.ModelSerializer):
         fields = ['result_url']
 
 
-class ArticleSerializer(serializers.ModelSerializer):
+class ArticleMainSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
-        fields = ['contract_id', 'sentence', 'description', 'law', 'recommend']
+        fields = ['contract_id', 'sentence', 'description', 'law']
 
