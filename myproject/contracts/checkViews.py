@@ -8,15 +8,9 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
-
-from .serializers import ArticleMainSerializer
-from .tasks import type_save_task, pdf_to_html_task, review_get_task
+from .tasks import pdf_to_html_task, review_get_task
 from .models import Contract
 import uuid
-import requests
-import os
-import json
-from .utils.openAICall import analyze_contract
 
 
 class UploadView(APIView):
@@ -129,6 +123,6 @@ class ContractDetailView(APIView):
         }
     )
     def get(self, request, contractId):
-        task_id = review_get_task.delay(contractId)
-        return Response({'task_id': task_id.id}, status=status.HTTP_200_OK)
+        task = review_get_task.delay(contractId)
+        return Response({'task_id': task.id}, status=status.HTTP_200_OK)
 

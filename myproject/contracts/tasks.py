@@ -6,12 +6,11 @@ import fitz
 import requests
 from celery import shared_task
 from django.core.files.base import ContentFile
-from rest_framework.response import Response
-from rest_framework import status
 from contracts.models import Type, Contract
 from .utils.openAICall import analyze_contract
 from .utils.pdfToHtml import pdf_to_html_with_pdfco
 from .serializers import ArticleMainSerializer
+
 
 @shared_task()
 def type_save_task(article, name):
@@ -21,7 +20,6 @@ def type_save_task(article, name):
 
 @shared_task()
 def pdf_to_html_task(contract):
-
     # S3 url 가져오기
     pdf_url = contract.origin_url.url
 
@@ -34,11 +32,12 @@ def pdf_to_html_task(contract):
     if html_content:
         html_file_name = f'{uuid.uuid4()}.html'
 
-        contract.origin.save(html_file_name,ContentFile(html_content.encode('utf-8')))
+        contract.origin.save(html_file_name, ContentFile(html_content.encode('utf-8')))
         contract.save()
 
 
-@shared_task(bind=True, autoretry_for=(requests.exceptions.RequestException, fitz.FileDataError), retry_kwargs={'max_retries': 5, 'countdown': 60*3})
+@shared_task(bind=True, autoretry_for=(requests.exceptions.RequestException, fitz.FileDataError),
+             retry_kwargs={'max_retries': 5, 'countdown': 60 * 3})
 def review_get_task(self, contractId):
     try:
         # contractId로 계약서 인스턴스 생성
@@ -91,7 +90,7 @@ def review_get_task(self, contractId):
                 }
                 articles.append(article_response)
             else:
-                return { 'status': 'error', 'message': serializer.error}
+                return {'status': 'error', 'message': serializer.error}
 
         # celery의 작업 결과는 JSON 형태나, Python 형태로 반환하기
         return {

@@ -9,7 +9,7 @@ class TaskStatusView(APIView):
         task = AsyncResult(task_id)
         response = {
             'task_id': task_id,
-            'status': task.status,
-            'result': task.result
+            'status': task.state,
+            'result': task.result if task.ready() else None,
         }
         return Response(response)
