@@ -124,6 +124,27 @@ class DocumentReadView(APIView):
         }
         return Response(response_data, status=status.HTTP_200_OK)
 
+from django_celery_beat.models import  PeriodicTask, IntervalSchedule
+def start_task(self, request):
+    # IntervalSchedule 객체를 가져오거나 생성합니다.
+    schedule, created = IntervalSchedule.objects.get_or_create(
+        every=10,
+        period=IntervalSchedule.SECONDS,
+    )
+
+    # 'test_task'라는 이름의 PeriodicTask가 이미 존재하는지 확인합니다.
+    if PeriodicTask.objects.filter(name='test_task').exists():
+        p_test = PeriodicTask.objects.get(name='test_task')
+        p_test.enabled = True  # 작업을 활성화합니다.
+        p_test.interval = schedule  # 새로운 interval 스케줄을 설정합니다.
+        p_test.save()
+    else:
+        # 'test_task'라는 이름의 새로운 PeriodicTask를 생성합니다.
+        PeriodicTask.objects.create(
+            interval=schedule,
+            name='test_task',
+            task='bracken.tasks.test_task'  # 실제 task 경로를 설정합니다.
+        )
 
 class DocumentChangeView(APIView):
     parser_classes = [MultiPartParser, FormParser]

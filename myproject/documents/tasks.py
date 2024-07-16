@@ -1,9 +1,9 @@
 from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
-import boto3
+import boto3, django
 from .models import Document
-import datetime
+
 
 @shared_task()
 def pdf_to_s3(document, file_name, file):
@@ -44,3 +44,6 @@ def delete_expired_files():
         except Exception as e:
             print(f"Failed to delete {document.pdfUrl.name}: {e}")
 
+@shared_task
+def test_task():
+    print("hello, world!")
