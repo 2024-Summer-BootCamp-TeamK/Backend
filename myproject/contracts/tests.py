@@ -1,11 +1,8 @@
-import re
-
-from docx.shared import Pt
-from kiwipiepy import Kiwi
 import groupdocs_conversion_cloud
 from shutil import copyfile
 import requests
 import os
+from docx.shared import Pt
 from dotenv import load_dotenv
 from docx import Document
 
@@ -88,71 +85,82 @@ except groupdocs_conversion_cloud.ApiException as e:
     print("Exception when calling get_supported_conversion_types:")
 
 
-def replace_text_in_docx(doc_path, replacement_map):
+def normalize_text(text):
+    # 공백 문자와 줄바꿈 문자를 제거합니다.
+    return ''.join(text.split())
+
+
+
+def replace_text_in_docx(doc_path, replacements):
     # Word 문서 열기
     doc = Document(doc_path)
 
-    # 문서의 모든 텍스트를 하나의 문자열로 결합
-    full_text = '!'.join([paragraph.text for paragraph in doc.paragraphs])
-    full_text = full_text.replace(' ', '?') # full_text의 공백 역시 '?'로 변환
-    print("full_Text with '!': ", full_text)
+    # 모든 단락의 텍스트를 하나로 결합합니다.
+    full_text = '\n'.join([para.text for para in doc.paragraphs])
 
-    # 텍스트 대체
-    for target, replacement in replacement_map.items():
-        target_with_exclamation = target.replace('\n', '!')  # target의 줄바꿈을 '!'로 변환
-        target_with_exclamation = target_with_exclamation.replace(' ', '?')  # target의 공백을 '?'로 변환
-        print("target_with_exclamation: ", target_with_exclamation)
+    # 각 치환 작업을 수행합니다.
+    for sub_text, replacement_text in replacements:
+        normalized_full_text = normalize_text(full_text)
+        normalized_sub_text = normalize_text(sub_text)
 
-        # '?'와 '!'를 무시하고 포함 여부 확인
-        pattern = re.compile(re.escape(target_with_exclamation).replace(r'\?', '[^\s]*').replace(r'\!', '[^\n]*'),
-                             re.IGNORECASE)
-        if pattern.search(full_text.replace('!', '').replace('?', '')):
-            print(f"문장 변환 : {target_with_exclamation} -> {replacement}")
-            full_text = pattern.sub(replacement, full_text)
+        start_idx = normalized_full_text.find(normalized_sub_text)
+        while start_idx != -1:
+            actual_start_idx = -1
+            actual_end_idx = -1
+            normalized_index = 0
+            main_chars = list(full_text)
 
-    # '!'를 다시 줄바꿈으로 복원
-    full_text = full_text.replace('!', '\n')
-    # '?'를 다시 공백으로 복원
-    full_text = full_text.replace('?', ' ')
+            for i, char in enumerate(main_chars):
+                if char not in (' ', '\n'):
+                    if normalized_index == start_idx:
+                        actual_start_idx = i
+                    normalized_index += 1
+                if normalized_index == start_idx + len(normalized_sub_text):
+                    actual_end_idx = i + 1
+                    break
 
-    # 기존 문서의 모든 문단 삭제
-    for p in doc.paragraphs:
-        p._element.getparent().remove(p._element)
+            # 텍스트를 대체합니다.
+            if actual_start_idx != -1 and actual_end_idx != -1:
+                full_text = full_text[:actual_start_idx] + replacement_text + full_text[actual_end_idx:]
+                normalized_full_text = normalize_text(full_text)
 
-    # 대체된 텍스트를 문단 단위로 다시 추가
-    for paragraph in full_text.split('\n'):
-        p = doc.add_paragraph(paragraph)
-        p.style = doc.styles['Normal']  # 스타일 설정
-        p_format = p.paragraph_format
-        p_format.left_indent = Pt(50)  # 들여쓰기 설정
-        p_format.space_after = Pt(4)  # 문단 간격 설정
+            start_idx = normalized_full_text.find(normalized_sub_text)
+
+    # 새로운 Document 객체를 생성하여 수정된 텍스트를 넣습니다.
+    new_doc = Document()
+    for para_text in full_text.split('\n'):
+        paragraph = new_doc.add_paragraph(para_text)
+
+        # 문단 간격 설정 예시
+        paragraph_format = paragraph.paragraph_format
+        paragraph_format.line_spacing = Pt(15)  # 20 포인트의 줄 간격 설정
 
     # 수정된 문서 저장
-    corrected_doc_path = os.path.splitext(doc_path)[0] + '_corrected.docx'
-    doc.save(corrected_doc_path)
+    corrected_doc_path = 'corrected_' + doc_path
+    new_doc.save(corrected_doc_path)
     print(f"문서가 성공적으로 저장되었습니다: {corrected_doc_path}")
     return corrected_doc_path
 
 
-# 교체할 문장과 대체 문장 딕셔너리
-replacement_map = {
-    "서울특별시 강남구 테헤란로 123": "서울특별시 강남구 삼성로 456",
-    "홍길동": "김철수",
-    "010-1234-5678": "010-9876-5432",
-    "고용주는 근로자의 안전과 건강을 보호하기 위해 필요한 조치를 취해야 하며,근로자는 안전 규정을 준수해야 합니다. 안전 규정 위반 시, 고용주는 즉시 계약을 해지할 수있습니다. (산업안전보건법 제4조)": "2024년 8월 1일부터 2025년 1월 31일까지 (계약 기간 만료 후 갱신 가능)",
-    "근무 시간: 주 7일, 일 12시간 (오전 8시부터 오후 8시까지, 휴게 시간 포함)":"(근로기준법 제32조) 주 7일 근무 및 주당 12시간 이상의 근로는 금지되며, 근로자는 주당 8시간 이내의 근로 시간을 준수해야 합니다.",
-    "근로자가 무단결근할 경우, 그날의 일급은 지급되지 않습니다.":"(근로기준법 제60조) 근로자가 무단결근할 경우 그날의 일급은 지급되지 않으며, 무단결근이 3회를 초과할 경우 고용주는 계약을 해지할 수 있습니다."
-}
+replacements_tuple = [
+    ("서울특별시 강남구 테헤란로 123", "(수정된 문장)서울특별시 강남구 삼성로 456"),
+    ("홍길동", "(수정된 문장)김철수"),
+    ("010-1234-5678", "(수정된 문장)010-9876-5432"),
+    ("고용주는 근로자의 안전과 건강을 보호하기 위해 필요한 조치를 취해야 하며,근로자는 안전 규정을 준수해야 합니다. 안전 규정 위반 시, 고용주는 즉시 계약을 해지할 수있습니다. (산업안전보건법 제4조)", "(수정된 문장)2024년 8월 1일부터 2025년 1월 31일까지 (계약 기간 만료 후 갱신 가능)"),
+    ("근무 시간: 주 7일, 일 12시간 (오전 8시부터 오후 8시까지, 휴게 시간 포함)", "(근로기준법 제32조)(수정된 문장) 주 7일 근무 및 주당 12시간 이상의 근로는 금지되며, 근로자는 주당 8시간 이내의 근로 시간을 준수해야 합니다."),
+    ("근로자가 무단결근할 경우, 그날의 일급은 지급되지 않습니다.", "(근로기준법 제60조)(수정된 문장) 근로자가 무단결근할 경우 그날의 일급은 지급되지 않으며, 무단결근이 3회를 초과할 경우 고용주는 계약을 해지할 수 있습니다.")
+]
+
 
 # 문장 대체 함수 호출
-replace_text_in_docx(docx_file, replacement_map)
+result = replace_text_in_docx(docx_file, replacements_tuple)
 
-# uploaded_file_key = docx_upload(docx_file)
-#
-# if uploaded_file_key:
-#     print(f'업로드된 파일의 S3 경로: {uploaded_file_key}')
-#     # 여기서 필요한 작업을 수행 (예: 다운로드 URL 생성 또는 다른 처리 등)
-# else:
-#     print('파일 업로드 실패')
+uploaded_file_key = docx_upload(result)
+
+if uploaded_file_key:
+    print(f'업로드된 파일의 S3 경로: {uploaded_file_key}')
+    # 여기서 필요한 작업을 수행 (예: 다운로드 URL 생성 또는 다른 처리 등)
+else:
+    print('파일 업로드 실패')
 
 

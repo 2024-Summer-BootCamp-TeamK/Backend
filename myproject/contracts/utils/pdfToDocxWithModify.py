@@ -1,23 +1,23 @@
-import re
-from kiwipiepy import Kiwi
 import groupdocs_conversion_cloud
 from shutil import copyfile
 import requests
 import os
+from docx.shared import Pt
 from dotenv import load_dotenv
 from docx import Document
-from .docxUpload import docx_upload
+
+from myproject.contracts.utils.docxUpload import docx_upload
 
 load_dotenv()
 
 
-def pdf_convert_docx(url: str, replacement_map: dict) -> bytes:
+def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
     """
     S3에서 PDF를 다운로드하고, 텍스트 교체 후 Word로 변환하고, 최종적으로 PDF로 변환하여 반환합니다.
 
     :param url: PDF 파일의 S3 URL
-    :param replacement_map: 교체할 문장과 그에 대응하는 대체 문장 딕셔너리
-    :return: 변환된 PDF 파일의 바이트 데이터
+    :param replacement_list: 교체할 문장과 그에 대응하는 대체 문장 튜플
+    :return: 수정한 docx파일의 s3 URL
     """
 
     # PDF 파일의 로컬 경로 설정
@@ -94,40 +94,64 @@ def pdf_convert_docx(url: str, replacement_map: dict) -> bytes:
     except groupdocs_conversion_cloud.ApiException as e:
         print("Exception when calling get_supported_conversion_types:")
 
-    # 변환된 Word 파일 열기
-    doc = Document(docx_file)
+    def normalize_text(text):
+        # 공백 문자와 줄바꿈 문자를 제거합니다.
+        return ''.join(text.split())
 
-    # Kiwi 형태소 분석기 초기화
-    kiwi = Kiwi()
+    def replace_text_in_docx(doc_path, replacements):
+        # Word 문서 열기
+        doc = Document(doc_path)
 
-    # 공백과 줄바꿈을 제거한 교체 문장 목록 생성
-    replacement_map_normalized = {
-        re.sub(r'\s+', '', k): re.sub(r'\s+', '', v) for k, v in replacement_map.items()
-    }
+        # 모든 단락의 텍스트를 하나로 결합합니다.
+        full_text = '\n'.join([para.text for para in doc.paragraphs])
 
-    # 원본 문서의 각 문단에서 공백과 줄바꿈을 제거하여 비교 및 교체
-    for paragraph in doc.paragraphs:
-        normalized_paragraph = re.sub(r'\s+', '', paragraph.text)
-        changed = False
-        for before, after in replacement_map_normalized.items():
-            normalized_before = re.sub(r'\s+', '', before)
-            if normalized_before in normalized_paragraph:
-                corrected_paragraph = normalized_paragraph.replace(normalized_before, after)
-                corrected_text = kiwi.space(corrected_paragraph)
-                paragraph.text = corrected_text
-                changed = True
-                break
-        if not changed:
-            paragraph.text = kiwi.space(paragraph.text)
+        # 각 치환 작업을 수행합니다.
+        for sub_text, replacement_text in replacements:
+            normalized_full_text = normalize_text(full_text)
+            normalized_sub_text = normalize_text(sub_text)
 
-    # 자동 띄어쓰기가 적용된 Word 파일 내용 출력
-    for paragraph in doc.paragraphs:
-        print(paragraph.text)
+            start_idx = normalized_full_text.find(normalized_sub_text)
+            while start_idx != -1:
+                actual_start_idx = -1
+                actual_end_idx = -1
+                normalized_index = 0
+                main_chars = list(full_text)
 
-    # 자동 띄어쓰기가 적용된 Word 파일 저장
-    doc.save(corrected_docx_file)
+                for i, char in enumerate(main_chars):
+                    if char not in (' ', '\n'):
+                        if normalized_index == start_idx:
+                            actual_start_idx = i
+                        normalized_index += 1
+                    if normalized_index == start_idx + len(normalized_sub_text):
+                        actual_end_idx = i + 1
+                        break
 
-    uploaded_file_key = docx_upload(corrected_docx_file)
+                # 텍스트를 대체합니다.
+                if actual_start_idx != -1 and actual_end_idx != -1:
+                    full_text = full_text[:actual_start_idx] + replacement_text + full_text[actual_end_idx:]
+                    normalized_full_text = normalize_text(full_text)
+
+                start_idx = normalized_full_text.find(normalized_sub_text)
+
+        # 새로운 Document 객체를 생성하여 수정된 텍스트를 넣습니다.
+        new_doc = Document()
+        for para_text in full_text.split('\n'):
+            paragraph = new_doc.add_paragraph(para_text)
+
+            # 문단 간격 설정 예시
+            paragraph_format = paragraph.paragraph_format
+            paragraph_format.line_spacing = Pt(15)  # 20 포인트의 줄 간격 설정
+
+        # 수정된 문서 저장
+        corrected_doc_path = 'corrected_' + doc_path
+        new_doc.save(corrected_doc_path)
+        print(f"문서가 성공적으로 저장되었습니다: {corrected_doc_path}")
+        return corrected_doc_path
+
+    # 문장 대체 함수 호출
+    result = replace_text_in_docx(docx_file, replacement_list)
+
+    uploaded_file_key = docx_upload(result)
 
     if uploaded_file_key:
         print(f'업로드된 파일의 S3 경로: {uploaded_file_key}')

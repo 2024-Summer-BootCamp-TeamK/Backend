@@ -89,16 +89,16 @@ class ContractModifyView(APIView):
             origin_pdf_url = contract.origin_url
             logger.debug("Origin PDF URL: %s", origin_pdf_url)
 
-            search_replace_map = {}  # 딕셔너리 초기화
+            search_replace_list = []  # 튜플 리스트 초기화
 
             for article_id in article_ids:
                 article = Article.objects.filter(id=article_id).first()
                 if article:
-                    search_replace_map[article.sentence] = article.recommend  # 딕셔너리에 추가
+                    search_replace_list.append((article.sentence, article.recommend))  # 튜플을 리스트에 추가
 
             # 수정사항 적용된 docx파일
             # ex: docx/df2e61b8-13bb-4a01-b7db-b82a3c113bc2.docx
-            docx_url = pdf_convert_docx(origin_pdf_url, search_replace_map)
+            docx_url = pdf_convert_docx(origin_pdf_url, search_replace_list)
 
             # docx를 pdf로 변환
             modified_pdf = docx_to_pdf(PDFCO_API_KEY, docx_url)
