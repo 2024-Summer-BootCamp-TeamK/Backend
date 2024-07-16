@@ -189,21 +189,24 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
 
 # Redis 브로커 URL과 결과 백엔드를 설정
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
+#CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+#CELERY_ACCEPT_CONTENT = ['json']
+#CELERY_TASK_SERIALIZER = 'json'
 
-CELERY_BEAT_SCHEDULE = {
-    'delete_expired_files_every_week': {
-        'task': 'myproject.documents.tasks.delete_expired_files',
-        'schedule': crontab(),
-    }
-}
+#CELERY_BEAT_SCHEDULE = {
+#    'delete_expired_files_every_week': {
+#        'task': 'myproject.documents.tasks.delete_expired_files',
+#        'schedule': crontab(),
+#    }
+#}
 
 # Celery에서 스케줄링 시 사용할 시간대를 지정
 # UTC(세계 협정 시)를 사용 X, Seoul의 시간대를 사용
-CELERY_TIMEZONE = 'Asia/Seoul'
-CELERY_ENABLE_UTC = False
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_L10N = True
+USE_TZ = True
 
 # Celery-beat의 작업 스케줄을 데이터베이스에서 읽고 실행
 #CELERY_BEAT_SCHEDULE = 'django_celery_beat.schedulers:DatabaseScheduler'
