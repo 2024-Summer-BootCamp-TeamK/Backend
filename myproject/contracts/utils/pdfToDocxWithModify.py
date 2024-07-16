@@ -6,7 +6,7 @@ from docx.shared import Pt
 from dotenv import load_dotenv
 from docx import Document
 
-from myproject.contracts.utils.docxUpload import docx_upload
+from .docxUpload import docx_upload
 
 load_dotenv()
 
