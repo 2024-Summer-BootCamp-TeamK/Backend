@@ -25,7 +25,8 @@ def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
     # PDF 파일의 로컬 경로 설정
 
     pdf_file = f'{uuid.uuid4()}.pdf'
-    docx_file = 'output.docx'
+    docx_file = f'output{uuid.uuid4()}.docx'
+
     corrected_docx_file = 'output_corrected.docx'
 
     # PDF를 다운로드하여 로컬에 저장
@@ -91,7 +92,6 @@ def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
         # Download Document from Storage
         request_download = groupdocs_conversion_cloud.DownloadFileRequest(output_name)
         response_download = file_api.download_file(request_download)
-        docx_file = f'sample_copy_{uuid.uuid4()}.docx'
         copyfile(response_download, docx_file)
         print("Result {}".format(response_download))
     except groupdocs_conversion_cloud.ApiException as e:
