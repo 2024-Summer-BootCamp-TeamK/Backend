@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 
-from .serializers import ArticleSerializer
+from .serializers import ArticleMainSerializer
 from .utils.pdfToHtml import pdf_to_html_with_pdfco
 from .models import Contract, Type
 import uuid
@@ -167,39 +167,38 @@ class ContractDetailView(APIView):
             # 검토 결과 JSON 형태로 변경
             parsed_result = json.loads(raw_result)
             articles = []
+            type_name = ""
             for i in range(len(parsed_result)):
                 article_data = {
                     "contract_id": contract.id,
                     "sentence": parsed_result[i].get("sentence", ""),
                     "description": parsed_result[i].get("description", ""),
                     "law": parsed_result[i].get("law", ""),
-                    "recommend": parsed_result[i].get("recommend", "")
                 }
                 # 시리얼라이저를 이용해 데이터 저장
-                serializer = ArticleSerializer(data=article_data)
+                serializer = ArticleMainSerializer(data=article_data)
 
                 if serializer.is_valid():
                     article_instance = serializer.save()
 
-                    for type_name in parsed_result[i]["types"]:
-                         type_instance = Type.objects.get(name=type_name)
-                         article_instance.type.add(type_instance)
+                    type_instance = Type.objects.get(name="main")
+                    type_name = type_instance.name
+                    article_instance.type.add(type_instance)
 
-                    article_data = {
+                    article_response = {
                         "articleId": article_instance.id,
                         "sentence": article_instance.sentence,
-                        "types": parsed_result[i].get("types", []),
-                        "description": article_instance.description,
                         "law": article_instance.law,
-                        "recommend": article_instance.recommend
+                        "description": article_instance.description,
                     }
-                    articles.append(article_data)
+                    articles.append(article_response)
                 else:
                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
             return Response({
                 'contractId': contract.id,
                 'contract': uploaded_html_content,
+                'type': type_name,
                 'articles': articles
             }, status=status.HTTP_200_OK)
 
