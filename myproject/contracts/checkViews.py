@@ -167,6 +167,7 @@ class ContractDetailView(APIView):
             # 검토 결과 JSON 형태로 변경
             parsed_result = json.loads(raw_result)
             articles = []
+            type = ""
             for i in range(len(parsed_result)):
                 article_data = {
                     "contract_id": contract.id,
@@ -181,6 +182,7 @@ class ContractDetailView(APIView):
                     article_instance = serializer.save()
 
                     type_instance = Type.objects.get(name="main")
+                    type = type_instance.name
                     article_instance.type.add(type_instance)
 
                     article_data = {
@@ -197,7 +199,7 @@ class ContractDetailView(APIView):
             return Response({
                 'contractId': contract.id,
                 'contract': uploaded_html_content,
-                'type': contract.type,
+                'type': type,
                 'articles': articles
             }, status=status.HTTP_200_OK)
 
