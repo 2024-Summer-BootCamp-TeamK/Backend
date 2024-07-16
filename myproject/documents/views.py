@@ -145,8 +145,7 @@ def start_task(self, request):
             name='test_task',
             task='bracken.tasks.test_task'  # 실제 task 경로를 설정합니다.
         )
-
-
+        
 class DocumentChangeView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
