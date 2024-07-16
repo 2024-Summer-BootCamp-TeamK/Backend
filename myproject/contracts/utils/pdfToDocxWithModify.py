@@ -50,8 +50,8 @@ def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
 
     try:
         # Get your app_sid and app_key at https://dashboard.groupdocs.cloud (free registration is required).
-        app_sid = "c0a01269-583e-4840-a433-acf04f50d795"
-        app_key = "80c9eb7a05333a39c977c79aef838574"
+        app_sid = os.getenv('app_sid')
+        app_key = os.getenv('app_key')
 
         # Create instance of the API
         convert_api = groupdocs_conversion_cloud.ConvertApi.from_keys(app_sid, app_key)
