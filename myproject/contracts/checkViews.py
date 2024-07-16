@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 
-from .serializers import ArticleSerializer
+from .serializers import ArticleMainSerializer
 from .utils.pdfToHtml import pdf_to_html_with_pdfco
 from .models import Contract, Type
 import uuid
@@ -175,7 +175,7 @@ class ContractDetailView(APIView):
                     "law": parsed_result[i].get("law", ""),
                 }
                 # 시리얼라이저를 이용해 데이터 저장
-                serializer = ArticleSerializer(data=article_data)
+                serializer = ArticleMainSerializer(data=article_data)
 
                 if serializer.is_valid():
                     article_instance = serializer.save()
