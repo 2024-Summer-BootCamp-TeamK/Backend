@@ -167,7 +167,7 @@ class ContractDetailView(APIView):
             # 검토 결과 JSON 형태로 변경
             parsed_result = json.loads(raw_result)
             articles = []
-            type = ""
+            type_name = ""
             for i in range(len(parsed_result)):
                 article_data = {
                     "contract_id": contract.id,
@@ -182,24 +182,23 @@ class ContractDetailView(APIView):
                     article_instance = serializer.save()
 
                     type_instance = Type.objects.get(name="main")
-                    type = type_instance.name
+                    type_name = type_instance.name
                     article_instance.type.add(type_instance)
 
-                    article_data = {
+                    article_response = {
                         "articleId": article_instance.id,
                         "sentence": article_instance.sentence,
-                        "description": article_instance.description,
                         "law": article_instance.law,
-                        "recommend": article_instance.recommend
+                        "description": article_instance.description,
                     }
-                    articles.append(article_data)
+                    articles.append(article_response)
                 else:
                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
             return Response({
                 'contractId': contract.id,
                 'contract': uploaded_html_content,
-                'type': type,
+                'type': type_name,
                 'articles': articles
             }, status=status.HTTP_200_OK)
 
