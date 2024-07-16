@@ -94,6 +94,7 @@ def review_get_task(self, contractId):
 
         # celery의 작업 결과는 JSON 형태나, Python 형태로 반환하기
         return {
+            'status': 'success',
             'contractId': contract.id,
             'contract': uploaded_html_content,
             'type': "main",

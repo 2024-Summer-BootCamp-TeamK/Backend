@@ -10,6 +10,6 @@ class TaskStatusView(APIView):
         response = {
             'task_id': task_id,
             'status': task.state,
-            'result': task.result if task.ready() else None,
+            'result': task.result if task.state == 'SUCCESS' else None
         }
         return Response(response)
