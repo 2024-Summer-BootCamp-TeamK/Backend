@@ -38,7 +38,7 @@ def pdf_to_html_task(contract):
         contract.save()
 
 
-@shared_task(bind=True, autoretry_for=(requests.exceptions.RequestException, fitz.fitz.FileDataError), retry_kwargs={'max_retries': 5, 'countdown': 60*3})
+@shared_task(bind=True, autoretry_for=(requests.exceptions.RequestException, fitz.FileDataError), retry_kwargs={'max_retries': 5, 'countdown': 60*3})
 def review_get_task(contractId):
     try:
         # contractId로 계약서 인스턴스 생성
@@ -80,7 +80,8 @@ def review_get_task(contractId):
             if serializer.is_valid():
                 article_instance = serializer.save()
 
-                type_save_task(article_instance, "main")
+                type_instance = Type.objects.get(name="main")
+                article_instance.type.add(type_instance)
 
                 article_response = {
                     "articleId": article_instance.id,
