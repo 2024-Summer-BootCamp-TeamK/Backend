@@ -30,7 +30,7 @@ def delete_expired_files():
     s3 = boto3.client('s3')
 
     # 현재 날짜 - 7일 = 만료 기준일
-    expiration_date = timezone.now() - timedelta(days=7)
+    expiration_date = timezone.now() - timedelta(days=5)
 
     # 만료된 파일을 찾기 위한 쿼리 작성
     expired_documents = Document.objects.filter(updated_at__lt=expiration_date)
