@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 
 from .serializers import ArticleMainSerializer
+from .tasks import type_save_task, pdf_to_html_task
 from .utils.pdfToHtml import pdf_to_html_with_pdfco
 from .models import Contract, Type
 import uuid
@@ -64,35 +65,10 @@ class UploadView(APIView):
             contract.origin_url.save(file_name, ContentFile(pdf_file.read()))
             contract.save()
 
-            # S3 url 가져오기
-            pdf_url = contract.origin_url.url
-
-            # pdf -> html 코드 변환
-            pdfco_api_key = os.getenv('PDFCO_API_KEY')
-            try:
-                html_content = pdf_to_html_with_pdfco(pdfco_api_key, pdf_url)
-            except HTTPError as http_err:
-                return Response({'error': f'HTTP error occurred: {str(http_err)}'},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            except Exception as err:
-                return Response({'error': f'Other error occurred: {str(err)}'},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            # html 코드 S3에 업로드
-            if html_content:
-                html_file_name = f'{uuid.uuid4()}.html'
-
-                contract.origin.save(html_file_name, ContentFile(html_content.encode('utf-8')))
-                contract.save()
-                print(contract.origin.url)
+            pdf_to_html_task(contract)
 
             return Response({
-                # 'message': 'success upload files',
                 'contractId': contract.id,
-                # 'category': contract.category,
-                # 'pdf_url': contract.origin_url.url,
-                # 'html_url': contract.origin.url,
-                # 'extracted_text': uploaded_html_content,
             }, status=status.HTTP_201_CREATED)
 
         except UnicodeDecodeError as e:
@@ -113,27 +89,40 @@ class ContractDetailView(APIView):
         ],
         responses={
             200: openapi.Response('Success the results of reviewing the Contract',
-                openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'contractId': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID of the Contract'),
-                        'contract': openapi.Schema(type=openapi.TYPE_STRING, description='Contract HTML Code File'),
-                        'articles': openapi.Schema(type=openapi.TYPE_ARRAY,
-                                        items=openapi.Schema(type=openapi.TYPE_OBJECT,
-                                        properties={
-                                            'articleId': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID of the Article'),
-                                            'sentence': openapi.Schema(type=openapi.TYPE_STRING, description='강조할 내용'),
-                                            'types': openapi.Schema(
-                                                type=openapi.TYPE_ARRAY,
-                                                items=openapi.Schema(type=openapi.TYPE_STRING),
-                                                description=' main(주요조항) | toxin(독소조항) | ambi(모호한 표현)',
-                                                ),
-                                            'description': openapi.Schema(type=openapi.TYPE_STRING, description='해당 내용이 강조된 근거'),
-                                            'law': openapi.Schema(type=openapi.TYPE_STRING, description='해당 내용과 관련있는 법 조항'),
-                                            'recommend': openapi.Schema(type=openapi.TYPE_STRING, description='해당 문장의 수정 제안한 내용')
-                                        }
-                    ))}
-            )),
+                                  openapi.Schema(
+                                      type=openapi.TYPE_OBJECT,
+                                      properties={
+                                          'contractId': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                       description='ID of the Contract'),
+                                          'contract': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                     description='Contract HTML Code File'),
+                                          'articles': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                                     items=openapi.Schema(type=openapi.TYPE_OBJECT,
+                                                                                          properties={
+                                                                                              'articleId': openapi.Schema(
+                                                                                                  type=openapi.TYPE_INTEGER,
+                                                                                                  description='ID of the Article'),
+                                                                                              'sentence': openapi.Schema(
+                                                                                                  type=openapi.TYPE_STRING,
+                                                                                                  description='강조할 내용'),
+                                                                                              'types': openapi.Schema(
+                                                                                                  type=openapi.TYPE_ARRAY,
+                                                                                                  items=openapi.Schema(
+                                                                                                      type=openapi.TYPE_STRING),
+                                                                                                  description=' main(주요조항) | toxin(독소조항) | ambi(모호한 표현)',
+                                                                                              ),
+                                                                                              'description': openapi.Schema(
+                                                                                                  type=openapi.TYPE_STRING,
+                                                                                                  description='해당 내용이 강조된 근거'),
+                                                                                              'law': openapi.Schema(
+                                                                                                  type=openapi.TYPE_STRING,
+                                                                                                  description='해당 내용과 관련있는 법 조항'),
+                                                                                              'recommend': openapi.Schema(
+                                                                                                  type=openapi.TYPE_STRING,
+                                                                                                  description='해당 문장의 수정 제안한 내용')
+                                                                                          }
+                                                                                          ))}
+                                  )),
             400: 'Invalid data with Error GPT Request(Article)',
             404: 'Contract Of PDF File does not exist OR Contract Of HTML File does not exist ',
             500: 'Error processing request '
@@ -181,9 +170,7 @@ class ContractDetailView(APIView):
                 if serializer.is_valid():
                     article_instance = serializer.save()
 
-                    type_instance = Type.objects.get(name="main")
-                    type_name = type_instance.name
-                    article_instance.type.add(type_instance)
+                    type_save_task(article_instance, "main")
 
                     article_response = {
                         "articleId": article_instance.id,
@@ -210,3 +197,7 @@ class ContractDetailView(APIView):
             return Response({'error': 'Error decoding JSON: ' + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             return Response({'error': {e}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
