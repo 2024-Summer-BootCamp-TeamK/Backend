@@ -1,4 +1,5 @@
 import fitz
+from celery.result import AsyncResult
 from django.core.files.base import ContentFile
 from django.http import JsonResponse
 from drf_yasg import openapi
@@ -130,3 +131,4 @@ class ContractDetailView(APIView):
     def get(self, request, contractId):
         task_id = review_get_task.delay(contractId)
         return Response({'task_id': task_id}, status=status.HTTP_200_OK)
+

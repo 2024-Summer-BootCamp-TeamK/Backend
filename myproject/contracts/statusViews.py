@@ -1,5 +1,6 @@
-from multiprocessing.pool import AsyncResult
-from django.http import JsonResponse
+from celery.result import AsyncResult
+from rest_framework.response import Response
+
 from rest_framework.views import APIView
 
 class TaskStatusView(APIView):
@@ -11,4 +12,4 @@ class TaskStatusView(APIView):
             'status': task.status,
             'result': task.result
         }
-        return JsonResponse(response)
+        return Response(response)

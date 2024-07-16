@@ -10,4 +10,5 @@ urlpatterns = [
     path('contracts', UploadView.as_view(), name='upload'),
     path('contracts/<int:contractId>/main', ContractDetailView.as_view(), name='check_contract_main'),
     path('task_status/<str:task_id>', TaskStatusView.as_view(), name='task_status'),
+
 ]
