@@ -1,17 +1,16 @@
 import fitz
 from django.core.files.base import ContentFile
+from django.http import JsonResponse
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from requests import HTTPError
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 
 from .serializers import ArticleMainSerializer
-from .tasks import type_save_task, pdf_to_html_task
-from .utils.pdfToHtml import pdf_to_html_with_pdfco
-from .models import Contract, Type
+from .tasks import type_save_task, pdf_to_html_task, review_get_task
+from .models import Contract
 import uuid
 import requests
 import os
@@ -129,75 +128,5 @@ class ContractDetailView(APIView):
         }
     )
     def get(self, request, contractId):
-        try:
-            # contractId로 계약서 인스턴스 생성
-            contract = Contract.objects.get(id=contractId)
-
-            pdf_url = contract.origin_url.url
-            html_url = contract.origin.url
-
-            # 텍스트 추출
-            html_response = requests.get(html_url)
-            html_response.raise_for_status()
-            uploaded_html_content = html_response.content.decode('utf-8')
-
-            response = requests.get(pdf_url)
-            pdf_content = response.content
-
-            # 페이지 텍스트 추출
-            pdf_document = fitz.open(stream=pdf_content, filetype='pdf')
-            extracted_text = ""
-            for page_num in range(pdf_document.page_count):
-                page = pdf_document.load_page(page_num)
-                extracted_text += page.get_text()
-
-            raw_result = analyze_contract(extracted_text)
-
-            # 검토 결과 JSON 형태로 변경
-            parsed_result = json.loads(raw_result)
-            articles = []
-            type_name = ""
-            for i in range(len(parsed_result)):
-                article_data = {
-                    "contract_id": contract.id,
-                    "sentence": parsed_result[i].get("sentence", ""),
-                    "description": parsed_result[i].get("description", ""),
-                    "law": parsed_result[i].get("law", ""),
-                }
-                # 시리얼라이저를 이용해 데이터 저장
-                serializer = ArticleMainSerializer(data=article_data)
-
-                if serializer.is_valid():
-                    article_instance = serializer.save()
-
-                    type_save_task(article_instance, "main")
-
-                    article_response = {
-                        "articleId": article_instance.id,
-                        "sentence": article_instance.sentence,
-                        "law": article_instance.law,
-                        "description": article_instance.description,
-                    }
-                    articles.append(article_response)
-                else:
-                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-            return Response({
-                'contractId': contract.id,
-                'contract': uploaded_html_content,
-                'type': type_name,
-                'articles': articles
-            }, status=status.HTTP_200_OK)
-
-        except Contract.DoesNotExist:
-            return Response({'error': 'Contract does not exist'}, status=status.HTTP_404_NOT_FOUND)
-        except FileNotFoundError as e:
-            return Response({'error': 'Error fetching the file: ' + str(e)}, status=status.HTTP_404_NOT_FOUND)
-        except json.JSONDecodeError as e:
-            return Response({'error': 'Error decoding JSON: ' + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except Exception as e:
-            return Response({'error': {e}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-
+        task_id = review_get_task.delay(contractId)
+        return JsonResponse({'task_id': task_id}, status=status.HTTP_200_OK)
