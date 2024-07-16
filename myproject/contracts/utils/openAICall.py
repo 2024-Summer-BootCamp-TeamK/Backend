@@ -53,7 +53,7 @@ def search_documents_legal_docs(index, query):
     result = index.query(vector=query_embedding.tolist(), top_k=6, include_metadata=True)
     return [match['metadata']['세부항목'] for match in result['matches']]
 
-def analyze_contract(contract_text):
+def analyze_contract(contract_text, prompt):
     # 사용자 질문 설정
     user_question = f"{contract_text}\n이 법률적으로 검토해야 할 계약서 입니다\n"
 
@@ -80,7 +80,7 @@ def analyze_contract(contract_text):
     llm = ChatOpenAI(model_name="gpt-3.5-turbo", openai_api_key=OPENAI_API_KEY)
     prompt_template = PromptTemplate(
         input_variables=["context", "user_question"],
-        template=mainPrompts.GUIDELINE_PROMPT
+        template=prompt
     )
     llm_sequence = prompt_template | llm
 
