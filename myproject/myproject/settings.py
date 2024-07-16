@@ -182,11 +182,11 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 # Celery 메세지 브로커 설정 -> CELERY_BROKER_URL이 .env에 없음
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'amqp://teamK:lawbot@rabbitmq:5672/')
 
 # Redis 브로커 URL과 결과 백엔드를 설정
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
+CELERY_TIMEZONE = 'Asia/Seoul'
