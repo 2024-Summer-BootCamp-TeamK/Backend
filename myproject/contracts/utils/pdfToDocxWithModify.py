@@ -1,3 +1,5 @@
+import uuid
+
 import groupdocs_conversion_cloud
 from shutil import copyfile
 import requests
@@ -21,7 +23,8 @@ def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
     """
 
     # PDF 파일의 로컬 경로 설정
-    pdf_file = 'downloaded.pdf'
+
+    pdf_file = f'{uuid.uuid4()}.pdf'
     docx_file = 'output.docx'
     corrected_docx_file = 'output_corrected.docx'
 
@@ -37,7 +40,7 @@ def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
             raise RuntimeError(f"PDF 다운로드 중 오류 발생: {e}")
 
     source_url = f'https://{os.getenv("AWS_STORAGE_BUCKET_NAME")}.s3.ap-northeast-2.amazonaws.com/{url}'
-
+    print("\nsource_url: ", source_url)
     download_pdf_from_s3(source_url, pdf_file)
 
     # PDF 파일이 존재하는지 확인
@@ -54,9 +57,9 @@ def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
         file_api = groupdocs_conversion_cloud.FileApi.from_keys(app_sid, app_key)
 
         # upload soruce file to storage
-        filename = 'downloaded.pdf'
-        remote_name = 'input.pdf'
-        output_name = 'modified.docx'
+        filename = pdf_file
+        remote_name = pdf_file
+        output_name = f'{uuid.uuid4()}.docx'
         strformat = 'docx'
 
         request_upload = groupdocs_conversion_cloud.UploadFileRequest(remote_name, filename)
@@ -88,7 +91,7 @@ def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
         # Download Document from Storage
         request_download = groupdocs_conversion_cloud.DownloadFileRequest(output_name)
         response_download = file_api.download_file(request_download)
-        docx_file = 'sample_copy.docx'
+        docx_file = f'sample_copy_{uuid.uuid4()}.docx'
         copyfile(response_download, docx_file)
         print("Result {}".format(response_download))
     except groupdocs_conversion_cloud.ApiException as e:
@@ -143,7 +146,7 @@ def pdf_convert_docx(url: str, replacement_list: list) -> bytes:
             paragraph_format.line_spacing = Pt(15)  # 20 포인트의 줄 간격 설정
 
         # 수정된 문서 저장
-        corrected_doc_path = 'corrected_' + doc_path
+        corrected_doc_path = f'corrected_{uuid.uuid4()}' + doc_path
         new_doc.save(corrected_doc_path)
         print(f"문서가 성공적으로 저장되었습니다: {corrected_doc_path}")
         return corrected_doc_path
