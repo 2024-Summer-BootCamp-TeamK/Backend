@@ -129,6 +129,6 @@ class ContractDetailView(APIView):
         }
     )
     def get(self, request, contractId):
-        task_id = review_get_task(contractId)
+        task_id = review_get_task.apply(args=[contractId])
         return Response({'task_id': task_id.id}, status=status.HTTP_200_OK)
 
