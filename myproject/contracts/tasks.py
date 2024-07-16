@@ -38,7 +38,7 @@ def pdf_to_html_task(contract):
         contract.save()
 
 
-@shared_task()
+@shared_task(bind=True, autoretry_for=(requests.exceptions.RequestException, fitz.fitz.FileDataError), retry_kwargs={'max_retries': 5, 'countdown': 60*3})
 def review_get_task(contractId):
     try:
         # contractId로 계약서 인스턴스 생성
@@ -92,7 +92,7 @@ def review_get_task(contractId):
             else:
                 return { 'status': 'error', 'message': serializer.error}
 
-        # celery의 작업 결과는 JSON 형태나, Python 형태로 반홥하기
+        # celery의 작업 결과는 JSON 형태나, Python 형태로 반환하기
         return {
             'contractId': contract.id,
             'contract': uploaded_html_content,
