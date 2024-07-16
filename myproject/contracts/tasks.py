@@ -39,7 +39,7 @@ def pdf_to_html_task(contract):
 
 
 @shared_task(bind=True, autoretry_for=(requests.exceptions.RequestException, fitz.FileDataError), retry_kwargs={'max_retries': 5, 'countdown': 60*3})
-def review_get_task(contractId):
+def review_get_task(self, contractId):
     try:
         # contractId로 계약서 인스턴스 생성
         contract = Contract.objects.get(id=contractId)
