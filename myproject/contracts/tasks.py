@@ -73,6 +73,7 @@ def review_get_task(self, contractId):
         for page_num in range(pdf_document.page_count):
             page = pdf_document.load_page(page_num)
             extracted_text += page.get_text()
+        print(extracted_text)
         print("PDF content extracted")
 
         raw_result = analyze_contract(extracted_text)
