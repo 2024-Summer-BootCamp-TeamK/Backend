@@ -67,7 +67,8 @@ def review_get_task(self, contractId):
         print("PDF content extracted")
 
         raw_result = analyze_contract(extracted_text)
-
+        print("Raw result extracted")
+        print(raw_result)
         # 검토 결과 JSON 형태로 변경
         parsed_result = json.loads(raw_result)
         articles = []

@@ -45,6 +45,7 @@ def search_documents(index, query):
     index_result = index.query(vector=query_embedding.tolist(), top_k=5, include_metadata=True)
     return [match['metadata']['text'] for match in index_result['matches']]
 
+
 def search_documents_legal_docs(index, query):
     # 사용자 질문을 임베딩 벡터로 변환하기
     query_embedding = embed_text_with_hf(query)
@@ -53,18 +54,19 @@ def search_documents_legal_docs(index, query):
     result = index.query(vector=query_embedding.tolist(), top_k=6, include_metadata=True)
     return [match['metadata']['세부항목'] for match in result['matches']]
 
+
 def analyze_contract(contract_text):
     # 사용자 질문 설정
     user_question = f"{contract_text}\n이 법률적으로 검토해야 할 계약서 입니다\n"
 
-    index = pc.Index("legal-docs")
-    initial_search_results = search_documents_legal_docs(index, user_question)
+    index_first = pc.Index("legal-docs")
+    initial_search_results = search_documents_legal_docs(index_first, user_question)
 
     combined_context = " ".join(initial_search_results)
 
     refined_search_results = []
-    index = pc.Index("lawbot")
-    refined_search_results.extend(search_documents(index, combined_context))
+    index_sec = pc.Index("lawbot")
+    refined_search_results.extend(search_documents(index_sec, combined_context))
     # refined_search_results = []
     # for index_name in index_names:
     #     index = pc.Index(index_name)
