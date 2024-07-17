@@ -1,5 +1,3 @@
-import fitz
-from celery.result import AsyncResult
 from django.core.files.base import ContentFile
 from django.http import JsonResponse
 from drf_yasg import openapi

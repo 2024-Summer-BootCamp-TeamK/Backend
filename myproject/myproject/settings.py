@@ -17,9 +17,6 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
@@ -30,7 +27,6 @@ SECRET_KEY = 'django-insecure-ec@44d--9kdqz-$xog1a94r1=u3j+)na@bhumh!6t$t7*dg6%@
 DEBUG = True
 
 ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'localhost']
-
 
 # Application definition
 
@@ -142,7 +138,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
@@ -153,7 +148,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
@@ -179,7 +173,6 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
 
 # Celery 메세지 브로커 설정 -> CELERY_BROKER_URL이 .env에 없음
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'amqp://teamK:lawbot@rabbitmq:5672/')
