@@ -12,12 +12,6 @@ from . import mainPrompts
 
 load_dotenv()
 
-# Pinecone API 키와 OpenAI API 키 로드
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-pc = Pinecone(api_key=PINECONE_API_KEY)
-
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # 인덱스 이름 설정
@@ -54,7 +48,11 @@ def search_documents_legal_docs(index, query):
     return [match['metadata']['세부항목'] for match in result['matches']]
 
 
-def analyze_contract(contract_text):
+def analyze_contract(contract_text, PINECONE_API_KEY, OPENAI_API_KEY):
+    print("Analyzing contract...")
+    
+    pc = Pinecone(api_key=PINECONE_API_KEY)
+
     try:
         # 사용자 질문 설정
         user_question = f"{contract_text}\n이 법률적으로 검토해야 할 계약서 입니다\n"

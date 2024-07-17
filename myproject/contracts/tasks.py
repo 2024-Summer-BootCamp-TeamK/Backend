@@ -48,6 +48,11 @@ def pdf_to_html_task(contract):
 @shared_task(bind=True, base=MyBaseTask, autoretry_for=(requests.exceptions.RequestException, fitz.FileDataError),
              retry_kwargs={'max_retries': 5, 'countdown': 60 * 3})
 def review_get_task(self, contractId):
+
+    PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
     try:
         print(f"Started task for contract: {contractId}")
         # contractId로 계약서 인스턴스 생성
@@ -74,7 +79,8 @@ def review_get_task(self, contractId):
             extracted_text += page.get_text()
         print("PDF content extracted")
 
-        raw_result = analyze_contract(extracted_text)
+        raw_result = analyze_contract(extracted_text, PINECONE_API_KEY, OPENAI_API_KEY)
+
         print("Raw result extracted")
         print(raw_result)
         # 검토 결과 JSON 형태로 변경
