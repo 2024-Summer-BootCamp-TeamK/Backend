@@ -50,12 +50,12 @@ def review_get_task(self, contractId):
         html_url = contract.origin.url
 
         # 텍스트 추출
-        html_response = requests.get(html_url)
+        html_response = requests.get(html_url, verify=False)
         html_response.raise_for_status()
         uploaded_html_content = html_response.content.decode('utf-8')
         print("HTML content fetched")
 
-        response = requests.get(pdf_url)
+        response = requests.get(pdf_url, verify=False)
         pdf_content = response.content
 
         # 페이지 텍스트 추출
