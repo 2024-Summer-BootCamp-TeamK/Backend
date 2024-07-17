@@ -157,7 +157,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 # collectstatic 명령어로 모아진 정적 파일들이 저장될 디렉토리
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 #
 # # 정적 파일 디렉토리 설정 (개발 환경에서만 사용)
 # STATICFILES_DIRS = [
