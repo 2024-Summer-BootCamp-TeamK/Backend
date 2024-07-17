@@ -47,7 +47,7 @@ def search_documents_legal_docs(index, query):
     return [match['metadata']['세부항목'] for match in result['matches']]
 
 
-def analyze_contract(contract_text, PINECONE_API_KEY, OPENAI_API_KEY):
+def analyze_contract(contract_text, prompt, PINECONE_API_KEY, OPENAI_API_KEY):
     pc = Pinecone(api_key=PINECONE_API_KEY)
     try:
         # 사용자 질문 설정
@@ -66,7 +66,7 @@ def analyze_contract(contract_text, PINECONE_API_KEY, OPENAI_API_KEY):
         llm = ChatOpenAI(model_name="gpt-3.5-turbo", openai_api_key=OPENAI_API_KEY)
         prompt_template = PromptTemplate(
             input_variables=["context", "user_question"],
-            template=mainPrompts.GUIDELINE_PROMPT
+            template=prompt
         )
         llm_sequence = prompt_template | llm
 

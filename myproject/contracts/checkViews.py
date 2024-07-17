@@ -6,7 +6,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
-from .tasks import pdf_to_html_task, review_get_task
+from .tasks import pdf_to_html_task, main_review_get_task, toxin_review_get_task
 from .models import Contract
 import uuid
 
@@ -69,7 +69,7 @@ class UploadView(APIView):
             return Response({'error': {e}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class ContractDetailView(APIView):
+class ContractMainView(APIView):
     @swagger_auto_schema(
         operation_description='Get the results of reviewing the Contract',
         manual_parameters=[
@@ -121,6 +121,60 @@ class ContractDetailView(APIView):
         }
     )
     def get(self, request, contractId):
-        task = review_get_task.delay(contractId)
+        task = main_review_get_task.delay(contractId)
         return Response({'task_id': task.id}, status=status.HTTP_200_OK)
 
+class ContractToxinView(APIView):
+    @swagger_auto_schema(
+        operation_description='Get the results of reviewing the Contract',
+        manual_parameters=[
+            openapi.Parameter('contractId',
+                              openapi.IN_PATH,
+                              description="ID of the Contract",
+                              type=openapi.TYPE_INTEGER,
+                              required=True),
+        ],
+        responses={
+            200: openapi.Response('Success the results of reviewing the Contract',
+                                  openapi.Schema(
+                                      type=openapi.TYPE_OBJECT,
+                                      properties={
+                                          'contractId': openapi.Schema(type=openapi.TYPE_INTEGER,
+                                                                       description='ID of the Contract'),
+                                          'contract': openapi.Schema(type=openapi.TYPE_STRING,
+                                                                     description='Contract HTML Code File'),
+                                          'articles': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                                     items=openapi.Schema(type=openapi.TYPE_OBJECT,
+                                                                                          properties={
+                                                                                              'articleId': openapi.Schema(
+                                                                                                  type=openapi.TYPE_INTEGER,
+                                                                                                  description='ID of the Article'),
+                                                                                              'sentence': openapi.Schema(
+                                                                                                  type=openapi.TYPE_STRING,
+                                                                                                  description='강조할 내용'),
+                                                                                              'types': openapi.Schema(
+                                                                                                  type=openapi.TYPE_ARRAY,
+                                                                                                  items=openapi.Schema(
+                                                                                                      type=openapi.TYPE_STRING),
+                                                                                                  description=' main(주요조항) | toxin(독소조항) | ambi(모호한 표현)',
+                                                                                              ),
+                                                                                              'description': openapi.Schema(
+                                                                                                  type=openapi.TYPE_STRING,
+                                                                                                  description='해당 내용이 강조된 근거'),
+                                                                                              'law': openapi.Schema(
+                                                                                                  type=openapi.TYPE_STRING,
+                                                                                                  description='해당 내용과 관련있는 법 조항'),
+                                                                                              'recommend': openapi.Schema(
+                                                                                                  type=openapi.TYPE_STRING,
+                                                                                                  description='해당 문장의 수정 제안한 내용')
+                                                                                          }
+                                                                                          ))}
+                                  )),
+            400: 'Invalid data with Error GPT Request(Article)',
+            404: 'Contract Of PDF File does not exist OR Contract Of HTML File does not exist ',
+            500: 'Error processing request '
+        }
+    )
+    def get(self, request, contractId):
+        task = toxin_review_get_task.delay(contractId)
+        return Response({'task_id': task.id}, status=status.HTTP_200_OK)
