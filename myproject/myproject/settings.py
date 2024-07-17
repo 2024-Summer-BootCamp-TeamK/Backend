@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'channels',
     'corsheaders',
     'django_celery_beat',
+    'django_celery_results',
 ]
 
 CHANNEL_LAYERS = {
