@@ -50,14 +50,11 @@ def pdf_to_html_task(contract):
 def review_get_task(self, contractId):
 
     PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
     try:
-        print(f"Started task for contract: {contractId}")
         # contractId로 계약서 인스턴스 생성
         contract = Contract.objects.get(id=contractId)
-        print(f"Contract fetched: {contract.id}")
 
         pdf_url = contract.origin_url.url
         html_url = contract.origin.url
@@ -66,7 +63,6 @@ def review_get_task(self, contractId):
         html_response = requests.get(html_url, verify=False)
         html_response.raise_for_status()
         uploaded_html_content = html_response.content.decode('utf-8')
-        print("HTML content fetched")
 
         response = requests.get(pdf_url, verify=False)
         pdf_content = response.content
@@ -77,12 +73,9 @@ def review_get_task(self, contractId):
         for page_num in range(pdf_document.page_count):
             page = pdf_document.load_page(page_num)
             extracted_text += page.get_text()
-        print("PDF content extracted")
 
         raw_result = analyze_contract(extracted_text, PINECONE_API_KEY, OPENAI_API_KEY)
 
-        print("Raw result extracted")
-        print(raw_result)
         # 검토 결과 JSON 형태로 변경
         parsed_result = json.loads(raw_result)
         articles = []
@@ -111,8 +104,8 @@ def review_get_task(self, contractId):
                 articles.append(article_response)
             else:
                 return {'status': 'error', 'message': serializer.errors}
-        print(articles)
-        print("Finished task for contract")
+
+
         # celery의 작업 결과는 JSON 형태나, Python 형태로 반환하기
         return {
             'status': 'success',
