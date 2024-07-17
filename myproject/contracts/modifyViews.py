@@ -15,9 +15,8 @@ from drf_yasg.utils import swagger_auto_schema
 from dotenv import load_dotenv
 from requests import HTTPError
 from .utils.pdfToDocxWithModify import pdf_convert_docx
-from .utils.pdfToHtml import pdf_to_html_with_pdfco
 from .utils.docxToPdf import docx_to_pdf
-
+from .tasks import upload_modified_html_task
 load_dotenv()
 
 PDFCO_API_KEY = os.getenv('PDFCO_API_KEY')
@@ -52,7 +51,7 @@ class ContractModifyView(APIView):
                 return Response(status=status.HTTP_200_OK)
 
             self.modify_pdf2docx2pdf(contract, article_ids)
-            self.upload_modified_html(contract)
+            upload_modified_html_task(contract)
 
             contract.updated_at = timezone.now()
             contract.save()
@@ -65,24 +64,6 @@ class ContractModifyView(APIView):
             logger.error("Exception: %s", str(e))
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @staticmethod
-    def upload_modified_html(contract):
-        try:
-            modified_pdf_url = contract.result_url.url
-            logger.debug("Modified PDF URL: %s", modified_pdf_url)
-            html_content = pdf_to_html_with_pdfco(PDFCO_API_KEY, modified_pdf_url)
-
-            if html_content:
-                html_file_name = f'{uuid.uuid4()}.html'
-                contract.result.save(html_file_name, ContentFile(html_content.encode('utf-8')))
-                contract.save()
-
-        except HTTPError as http_err:
-            logger.error("HTTP Error: %s", str(http_err))
-            return Response({'error': f'HTTP error occurred: {str(http_err)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except Exception as err:
-            logger.error("Error: %s", str(err))
-            return Response({'error': f'Other error occurred: {str(err)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @staticmethod
     def modify_pdf2docx2pdf(contract, article_ids):
