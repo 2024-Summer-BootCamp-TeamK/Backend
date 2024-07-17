@@ -33,7 +33,7 @@ def delete_expired_files():
     expiration_date = timezone.now() - timedelta(days=5)
 
     # 만료된 파일을 찾기 위한 쿼리 작성
-    expired_documents = Document.objects.filter(updated_at__lt=expiration_date)
+    expired_documents = Document.objects.filter(updatedAt__lt=expiration_date)
 
     for document in expired_documents:
         try:
