@@ -4,12 +4,21 @@ import uuid
 
 import fitz
 import requests
-from celery import shared_task
+from celery import shared_task, Task
 from django.core.files.base import ContentFile
 from contracts.models import Type, Contract
 from .utils.openAICall import analyze_contract
 from .utils.pdfToHtml import pdf_to_html_with_pdfco
 from .serializers import ArticleMainSerializer
+
+class MyBaseTask(Task):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        # 로그 추가
+        print(f'Task failed: {task_id}, Error: {exc}')
+
+    def on_success(self, retval, task_id, args, kwargs):
+        # 로그 추가
+        print(f'Task succeeded: {task_id}')
 
 
 @shared_task()
@@ -36,7 +45,7 @@ def pdf_to_html_task(contract):
         contract.save()
 
 
-@shared_task(bind=True, autoretry_for=(requests.exceptions.RequestException, fitz.FileDataError),
+@shared_task(bind=True, base=MyBaseTask, autoretry_for=(requests.exceptions.RequestException, fitz.FileDataError),
              retry_kwargs={'max_retries': 5, 'countdown': 60 * 3})
 def review_get_task(self, contractId):
     try:
