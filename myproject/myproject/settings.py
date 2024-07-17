@@ -204,5 +204,7 @@ CELERY_BEAT_SCHEDULE = {
 # UTC(세계 협정 시)를 사용 X, Seoul의 시간대를 사용
 CELERY_TIMEZONE = 'Asia/Seoul'
 CELERY_ENABLE_UTC = False
+TIME_ZONE = 'Asia/Seoul'
+USE_TZ = True
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'

@@ -2,7 +2,6 @@ from __future__ import absolute_import, unicode_literals
 from celery import Celery
 # Django 프로젝트 설정을 위한 설정
 import os
-import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 

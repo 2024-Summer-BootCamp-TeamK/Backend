@@ -26,5 +26,9 @@ COPY . /backend/
 # Django 환경 변수를 설정합니다.
 ENV DJANGO_SETTINGS_MODULE=myproject.settings
 
+# Celery Timezone 설정 및 필요 패키지 설치
+RUN apt-get update && apt-get install -y tzdata
+RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && echo "Asia/Seoul" > /etc/timezone
+
 # Celery 명령어를 기본 명령어로 설정합니다.
 CMD ["celery", "-A", "myproject", "worker", "--loglevel=info"]
