@@ -105,7 +105,6 @@ def review_get_task(self, contractId):
             else:
                 return {'status': 'error', 'message': serializer.errors}
 
-
         # celery의 작업 결과는 JSON 형태나, Python 형태로 반환하기
         return {
             'status': 'success',

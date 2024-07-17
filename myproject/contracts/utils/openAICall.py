@@ -48,33 +48,22 @@ def search_documents_legal_docs(index, query):
 
 
 def analyze_contract(contract_text, PINECONE_API_KEY, OPENAI_API_KEY):
-    print("Analyzing contract...")
-
     pc = Pinecone(api_key=PINECONE_API_KEY)
-    # 인덱스 이름 설정
-    index_names = ["legal-docs", "lawbot"]
-
     try:
         # 사용자 질문 설정
         user_question = f"{contract_text}\n이 법률적으로 검토해야 할 계약서 입니다\n"
-        refined_search_results = []
-        for index_name in index_names:
-            try:
-                index = pc.Index(index_name)
-                if index_name == "legal-docs":
-                    refined_search_results.extend(search_documents_legal_docs(index, user_question))
-                else:
-                    refined_search_results.extend(search_documents(index, user_question))
-            except Exception as e:
-                print(f"Error searching in index {index_name}: {str(e)}")
 
-        # 검색된 문서 출력
-        for i, doc in enumerate(refined_search_results, 1):
-            print(f"Search result {i}: {doc}")
+        index_first = pc.Index("legal-docs")
+        initial_search_results = search_documents_legal_docs(index_first, user_question)
+
+        combined_context = " ".join(initial_search_results)
+
+        refined_search_results = []
+        index_sec = pc.Index("lawbot")
+        refined_search_results.extend(search_documents(index_sec, combined_context))
 
         # 검색된 문서 텍스트를 모두 하나의 문자열로 결합
         context = " ".join(refined_search_results)
-        print("Combined context created")
 
         # OpenAI 모델 설정
         llm = ChatOpenAI(model_name="gpt-3.5-turbo", openai_api_key=OPENAI_API_KEY)
@@ -87,9 +76,8 @@ def analyze_contract(contract_text, PINECONE_API_KEY, OPENAI_API_KEY):
         # 질문과 검색된 문서 내용을 사용하여 모델에 invoke
         response = llm_sequence.invoke({"context": context, "user_question": user_question})
         raw_result = response.content
-        print("LLM response received")
-        print(raw_result)
         return raw_result
+
     except Exception as e:
         print(f"Error in analyze_contract: {str(e)}")
         return json.dumps({'status': 'error', 'message': str(e)})
