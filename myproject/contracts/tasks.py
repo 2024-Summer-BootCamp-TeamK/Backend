@@ -44,22 +44,21 @@ def pdf_to_html_task(contract):
         contract.origin.save(html_file_name, ContentFile(html_content.encode('utf-8')))
         contract.save()
 
-@shared_task()
+
+@shared_task(base=MyBaseTask)
 def upload_modified_html_task(contract):
-    try:
-        modified_pdf_url = contract.result_url.url
+    modified_pdf_url = contract.result_url.url
 
-        pdfco_api_key = os.getenv('PDFCO_API_KEY')
+    pdfco_api_key = os.getenv('PDFCO_API_KEY')
 
-        html_content = pdf_to_html_with_pdfco(pdfco_api_key, modified_pdf_url)
+    html_content = pdf_to_html_with_pdfco(pdfco_api_key, modified_pdf_url)
 
-        if html_content:
-            html_file_name = f'{uuid.uuid4()}.html'
-            contract.result.save(html_file_name, ContentFile(html_content.encode('utf-8')))
-            contract.save()
+    if html_content:
+        html_file_name = f'{uuid.uuid4()}.html'
+        contract.result.save(html_file_name, ContentFile(html_content.encode('utf-8')))
+        contract.save()
 
-    except Exception as e:
-        return {'status': 'error', 'message': str(e)}
+
 
 @shared_task(bind=True, base=MyBaseTask, autoretry_for=(requests.exceptions.RequestException, fitz.FileDataError),
              retry_kwargs={'max_retries': 5, 'countdown': 60 * 3})
