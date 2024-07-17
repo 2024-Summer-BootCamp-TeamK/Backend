@@ -11,6 +11,7 @@ from .utils.openAICall import analyze_contract
 from .utils.pdfToHtml import pdf_to_html_with_pdfco
 from .serializers import ArticleMainSerializer
 
+
 class MyBaseTask(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         # 로그 추가
@@ -53,7 +54,6 @@ def review_get_task(self, contractId):
         # contractId로 계약서 인스턴스 생성
         contract = Contract.objects.get(id=contractId)
         print(f"Contract fetched: {contract.id}")
-
 
         pdf_url = contract.origin_url.url
         html_url = contract.origin.url

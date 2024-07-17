@@ -19,10 +19,7 @@ pc = Pinecone(api_key=PINECONE_API_KEY)
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # 인덱스 이름 설정
-index_name = "selective-time"
-
-# 인덱스 열기
-index = pc.Index(index_name)
+index_names = ["legal-docs", "lawbot"]
 
 # 모델 및 토크나이저 설정
 model_name = "BM-K/KoSimCSE-roberta-multitask"
@@ -42,7 +39,7 @@ def search_documents(index, query):
     query_embedding = embed_text_with_hf(query)
     if query_embedding.shape != (768,):  # 임베딩 벡터의 크기 확인
         raise ValueError(f"Embedding size is {query_embedding.shape}, expected (768,)")
-    index_result = index.query(vector=query_embedding.tolist(), top_k=5, include_metadata=True)
+    index_result = index.query(vector=query_embedding.tolist(), top_k=4, include_metadata=True)
     return [match['metadata']['text'] for match in index_result['matches']]
 
 
@@ -51,7 +48,7 @@ def search_documents_legal_docs(index, query):
     query_embedding = embed_text_with_hf(query)
     if query_embedding.shape != (768,):  # 임베딩 벡터의 크기 확인
         raise ValueError(f"Embedding size is {query_embedding.shape}, expected (768,)")
-    result = index.query(vector=query_embedding.tolist(), top_k=6, include_metadata=True)
+    result = index.query(vector=query_embedding.tolist(), top_k=4, include_metadata=True)
     return [match['metadata']['세부항목'] for match in result['matches']]
 
 
@@ -59,21 +56,20 @@ def analyze_contract(contract_text):
     # 사용자 질문 설정
     user_question = f"{contract_text}\n이 법률적으로 검토해야 할 계약서 입니다\n"
 
-    index_first = pc.Index("legal-docs")
-    initial_search_results = search_documents_legal_docs(index_first, user_question)
-
-    combined_context = " ".join(initial_search_results)
-
-    refined_search_results = []
-    index_sec = pc.Index("lawbot")
-    refined_search_results.extend(search_documents(index_sec, combined_context))
+    # index_first = pc.Index("legal-docs")
+    # initial_search_results = search_documents_legal_docs(index_first, user_question)
+    #
+    # combined_context = " ".join(initial_search_results)
     # refined_search_results = []
-    # for index_name in index_names:
-    #     index = pc.Index(index_name)
-    #     if index_name == "legal-docs":
-    #         refined_search_results.extend(search_documents_legal_docs(index, user_question))
-    #     else:
-    #         refined_search_results.extend(search_documents(index, user_question))
+    # index_sec = pc.Index("lawbot")
+    # refined_search_results.extend(search_documents(index_sec, combined_context))
+    refined_search_results = []
+    for index_name in index_names:
+        index = pc.Index(index_name)
+        if index_name == "legal-docs":
+            refined_search_results.extend(search_documents_legal_docs(index, user_question))
+        else:
+            refined_search_results.extend(search_documents(index, user_question))
 
     # 검색된 문서 텍스트를 모두 하나의 문자열로 결합
     context = " ".join(refined_search_results)
