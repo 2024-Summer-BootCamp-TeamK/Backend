@@ -46,7 +46,9 @@ def pdf_to_html_task(contract):
 
 
 @shared_task(base=MyBaseTask)
-def upload_modified_html_task(contract):
+def upload_modified_html_task(contract_id):
+    contract = Contract.objects.filter(id=contract_id).first()
+
     modified_pdf_url = contract.result_url.url
 
     pdfco_api_key = os.getenv('PDFCO_API_KEY')

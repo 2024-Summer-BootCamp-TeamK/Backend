@@ -51,11 +51,13 @@ class ContractModifyView(APIView):
                 return Response(status=status.HTTP_200_OK)
 
             self.modify_pdf2docx2pdf(contract, article_ids)
-            task = upload_modified_html_task.delay(contract)
-            logger.debug("task_id: ", task.id)
+            # 태스크 호출 시 contract의 ID를 전달
+            task = upload_modified_html_task.delay(contract_id)
+            # 태스크 ID를 로그에 기록
+            logger.debug(f"\ntask_id: {task.id}")
             contract.updated_at = timezone.now()
             contract.save()
-            return Response({'task_id': task.id},status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_200_OK)
 
         except ValidationError as ve:
             logger.error("Validation Error: %s", ve.detail)
