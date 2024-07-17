@@ -38,7 +38,7 @@ def delete_expired_files():
     for document in expired_documents:
         try:
             # S3에서 파일 삭제
-            s3.delete_object(Bucket='lawbotttt', Key=f'documents/{document.pdfUrl.name}')
+            s3.delete_object(Bucket='lawbotttt', Key=document.pdfUrl.name)
             # 데이터베이스에서 해당 Document 삭제
             document.delete()
         except Exception as e:
