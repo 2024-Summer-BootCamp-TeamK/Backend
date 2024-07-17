@@ -86,7 +86,9 @@ class DocumentUploadView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class DocumentReadView(APIView):
+class DocumentView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
     @swagger_auto_schema(
         # 작업에 대한 설명
         operation_description="Retrieve a document by its ID",
@@ -123,8 +125,7 @@ class DocumentReadView(APIView):
             'pdfUrl': document.pdfUrl.url
         }
         return Response(response_data, status=status.HTTP_200_OK)
-class DocumentChangeView(APIView):
-    parser_classes = [MultiPartParser, FormParser]
+
 
     @swagger_auto_schema(
         operation_description='Modifying a document by uploading a new PDF file',
@@ -190,8 +191,6 @@ class DocumentChangeView(APIView):
             return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 
 class DocumentAccessView(APIView):
 
