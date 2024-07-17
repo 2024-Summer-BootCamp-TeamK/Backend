@@ -58,7 +58,7 @@ def analyze_contract(contract_text):
     try:
         # 사용자 질문 설정
         user_question = f"{contract_text}\n이 법률적으로 검토해야 할 계약서 입니다\n"
-
+        print(user_question)
         refined_search_results = []
         for index_name in index_names:
             try:
