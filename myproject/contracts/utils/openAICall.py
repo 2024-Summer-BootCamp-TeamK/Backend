@@ -71,6 +71,10 @@ def analyze_contract(contract_text):
         else:
             refined_search_results.extend(search_documents(index, user_question))
 
+    #검색된 문서 출력
+    for i, doc in enumerate(refined_search_results, 1):
+        print(f"Search result {i}: {doc}")
+
     # 검색된 문서 텍스트를 모두 하나의 문자열로 결합
     context = " ".join(refined_search_results)
 
@@ -85,5 +89,6 @@ def analyze_contract(contract_text):
     # 질문과 검색된 문서 내용을 사용하여 모델에 invoke
     response = llm_sequence.invoke({"context": context, "user_question": user_question})
     raw_result = response.content
+    print(raw_result)
     return raw_result
 
