@@ -197,7 +197,7 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_BEAT_SCHEDULE = {
     'delete_expired_files_every_week': {
         'task': 'documents.tasks.delete_expired_files',
-        'schedule': crontab(),
+        'schedule': crontab(hour=0,minute=0),
     }
 }
 

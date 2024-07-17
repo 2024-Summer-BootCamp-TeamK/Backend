@@ -30,22 +30,22 @@ import logging
 logger = logging.getLogger(__name__)
 @shared_task()
 def delete_expired_files():
-    print("1")
+    #print("1")
     # S3 클라이언트 초기화
     s3 = boto3.client('s3')
-    print("2")
+    #print("2")
 
     # 현재 날짜 - 7일 = 만료 기준일
-    expiration_date = timezone.now() - timedelta(days=2)
-    print(expiration_date)
+    expiration_date = timezone.now() - timedelta(days=7)
+    #print(expiration_date)
     # 만료된 파일을 찾기 위한 쿼리 작성
     expired_documents = Document.objects.filter(updatedAt__lt=expiration_date)
-    print("4")
+    #print("4")
 
     # 로그: 만료된 문서 수와 각 문서의 정보 출력
-    print(f"Found {expired_documents.count()} expired documents.")
+    #print(f"Found {expired_documents.count()} expired documents.")
     for document in expired_documents:
-        print(f"Expired document id={document.id}, pdfUrl={document.pdfUrl.name}")
+        #print(f"Expired document id={document.id}, pdfUrl={document.pdfUrl.name}")
 
         try:
             # S3에서 파일 삭제
@@ -54,6 +54,6 @@ def delete_expired_files():
 
             # 데이터베이스에서 해당 Document 삭제
             document.delete()
-            print(f"Deleted document {document.id} from database.")
+            #print(f"Deleted document {document.id} from database.")
         except Exception as e:
             print(f"Failed to delete {document.pdfUrl.name}: {e}")
