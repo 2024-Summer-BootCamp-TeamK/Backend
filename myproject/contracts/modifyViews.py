@@ -51,11 +51,11 @@ class ContractModifyView(APIView):
                 return Response(status=status.HTTP_200_OK)
 
             self.modify_pdf2docx2pdf(contract, article_ids)
-            upload_modified_html_task(contract)
-
+            task = upload_modified_html_task.delay(contract)
+            logger.debug("task_id: ", task.id)
             contract.updated_at = timezone.now()
             contract.save()
-            return Response(status=status.HTTP_200_OK)
+            return Response({'task_id': task.id},status=status.HTTP_200_OK)
 
         except ValidationError as ve:
             logger.error("Validation Error: %s", ve.detail)
