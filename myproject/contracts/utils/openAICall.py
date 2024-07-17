@@ -14,15 +14,13 @@ load_dotenv()
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-# 인덱스 이름 설정
-index_names = ["legal-docs", "lawbot"]
-
-# 모델 및 토크나이저 설정
-model_name = "BM-K/KoSimCSE-roberta-multitask"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModel.from_pretrained(model_name)
 
 def embed_text_with_hf(text):
+    # 모델 및 토크나이저 설정
+    model_name = "BM-K/KoSimCSE-roberta-multitask"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModel.from_pretrained(model_name)
+
     inputs = tokenizer(text, padding=True, truncation=True, return_tensors="pt", max_length=512)
     with torch.no_grad():
         outputs = model(**inputs)
@@ -32,6 +30,7 @@ def embed_text_with_hf(text):
 
 # 검색 함수 정의
 def search_documents(index, query):
+
     query_embedding = embed_text_with_hf(query)
     if query_embedding.shape != (768,):  # 임베딩 벡터의 크기 확인
         raise ValueError(f"Embedding size is {query_embedding.shape}, expected (768,)")
@@ -50,13 +49,14 @@ def search_documents_legal_docs(index, query):
 
 def analyze_contract(contract_text, PINECONE_API_KEY, OPENAI_API_KEY):
     print("Analyzing contract...")
-    
+
     pc = Pinecone(api_key=PINECONE_API_KEY)
+    # 인덱스 이름 설정
+    index_names = ["legal-docs", "lawbot"]
 
     try:
         # 사용자 질문 설정
         user_question = f"{contract_text}\n이 법률적으로 검토해야 할 계약서 입니다\n"
-        print(user_question)
         refined_search_results = []
         for index_name in index_names:
             try:
