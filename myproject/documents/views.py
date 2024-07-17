@@ -123,8 +123,6 @@ class DocumentReadView(APIView):
             'pdfUrl': document.pdfUrl.url
         }
         return Response(response_data, status=status.HTTP_200_OK)
-
-
 class DocumentChangeView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -182,6 +180,7 @@ class DocumentChangeView(APIView):
         pdf_key = '/'.join(unique_pdf_key_parts)
 
         try:
+            # delay: 작업을 비동기적으로 실행
             result = upload_file_to_s3.delay(bucket_name, pdf_key, uploaded_file.read())
 
             response_data = {
