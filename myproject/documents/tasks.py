@@ -1,7 +1,7 @@
 from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
-import boto3, django
+import boto3
 from .models import Document
 
 
@@ -38,12 +38,8 @@ def delete_expired_files():
     for document in expired_documents:
         try:
             # S3에서 파일 삭제
-            s3.delete_object(Bucket='lawbotttt', Key=document.pdfUrl.name)
+            s3.delete_object(Bucket='lawbotttt', Key=f'documents/{document.pdfUrl.name}')
             # 데이터베이스에서 해당 Document 삭제
             document.delete()
         except Exception as e:
             print(f"Failed to delete {document.pdfUrl.name}: {e}")
-
-@shared_task
-def test_task():
-    print("hello, world!")
