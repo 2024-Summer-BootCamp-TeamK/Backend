@@ -55,14 +55,11 @@ def analyze_contract(contract_text, PINECONE_API_KEY, OPENAI_API_KEY):
 
         index_first = pc.Index("legal-docs")
         initial_search_results = search_documents_legal_docs(index_first, user_question)
-
         combined_context = " ".join(initial_search_results)
 
         refined_search_results = []
         index_sec = pc.Index("lawbot")
         refined_search_results.extend(search_documents(index_sec, combined_context))
-
-        # 검색된 문서 텍스트를 모두 하나의 문자열로 결합
         context = " ".join(refined_search_results)
 
         # OpenAI 모델 설정
