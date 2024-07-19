@@ -72,6 +72,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
     "http://0.0.0.0:8000",
+    "http://localhost",
+    "http://localhost:5173",
+
 ]
 
 ROOT_URLCONF = 'myproject.urls'
@@ -200,3 +203,8 @@ TIME_ZONE = 'Asia/Seoul'
 USE_TZ = True
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost',
+]
