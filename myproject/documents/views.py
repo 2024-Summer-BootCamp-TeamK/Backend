@@ -229,10 +229,16 @@ class DocumentAccessView(APIView):
 
 class TestDownloadPDFView(APIView):
     def get(self, request, *args, **kwargs):
-        file_path = os.path.join('시간제_근로계약서.pdf', 'test.pdf')
+        # 실제 파일 경로로 수정
+        file_path = os.path.join(os.getcwd(), '시간제_근로계약서.pdf')  # 또는 절대 경로 사용
+        print(f"Looking for file at: {file_path}")  # 경로 출력
+
         if os.path.exists(file_path):
             with open(file_path, 'rb') as file:
                 response = HttpResponse(file.read(), content_type='application/pdf')
                 response['Content-Disposition'] = 'attachment; filename="mypdf.pdf"'
                 return response
+        else:
+            print("File not found!")  # 파일 없음을 출력
+
         return Response(status=status.HTTP_404_NOT_FOUND)
