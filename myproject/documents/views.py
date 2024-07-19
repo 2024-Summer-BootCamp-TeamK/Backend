@@ -238,6 +238,7 @@ class DocumentAccessView(APIView):
                 Params={'Bucket': settings.AWS_STORAGE_BUCKET_NAME, 'Key': file_key},
                 ExpiresIn=3600  # URL의 유효 기간 설정 (60초)
             )
+
             print(presigned_url)
             return Response({'check': True, 'url': presigned_url}, status=status.HTTP_200_OK)
         else:
