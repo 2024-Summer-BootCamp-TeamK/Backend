@@ -1,4 +1,5 @@
 import boto3
+from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
@@ -12,6 +13,7 @@ from drf_yasg import openapi
 from django.core.mail import EmailMessage
 from .utils import generate_password
 from .tasks import pdf_to_s3, upload_file_to_s3
+import os
 
 class DocumentUploadView(APIView):
     # 파일이나 폼 형태의 데이터를 처리해야하는 경우 필요!
@@ -225,5 +227,12 @@ class DocumentAccessView(APIView):
             return Response({'check': False}, status=status.HTTP_403_FORBIDDEN)
 
 
-
-
+class TestDownloadPDFView(APIView):
+    def get(self, request, *args, **kwargs):
+        file_path = os.path.join('시간제_근로계약서.pdf', 'test.pdf')
+        if os.path.exists(file_path):
+            with open(file_path, 'rb') as file:
+                response = HttpResponse(file.read(), content_type='application/pdf')
+                response['Content-Disposition'] = 'attachment; filename="mypdf.pdf"'
+                return response
+        return Response(status=status.HTTP_404_NOT_FOUND)
