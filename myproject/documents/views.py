@@ -12,6 +12,7 @@ from drf_yasg import openapi
 from django.core.mail import EmailMessage
 from .utils import generate_password
 from .tasks import pdf_to_s3, upload_file_to_s3
+from django.conf import settings
 
 class DocumentUploadView(APIView):
     # 파일이나 폼 형태의 데이터를 처리해야하는 경우 필요!
@@ -220,10 +221,24 @@ class DocumentAccessView(APIView):
         password = request.data.get('password')
 
         if password == document.password:
-            return Response({'check': True}, status=status.HTTP_200_OK)
+            # Pre-signed URL 생성
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME
+            )
+
+            # 문서 파일 키
+            file_key = document.pdfUrl.split('/')[-1]
+
+            # Pre-signed URL 생성
+            presigned_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': settings.AWS_STORAGE_BUCKET_NAME, 'Key': file_key},
+                ExpiresIn=60  # URL의 유효 기간 설정 (1시간)
+            )
+
+            return Response({'check': True, 'url': presigned_url}, status=status.HTTP_200_OK)
         else:
             return Response({'check': False}, status=status.HTTP_403_FORBIDDEN)
-
-
-
-
