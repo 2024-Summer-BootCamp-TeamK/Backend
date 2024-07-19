@@ -228,17 +228,17 @@ class DocumentAccessView(APIView):
                 aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
                 region_name=settings.AWS_S3_REGION_NAME
             )
-
             # 문서 파일 키
-            file_key = document.pdfUrl.split('/')[-1]
+            file_key = document.pdfUrl.name.split('/')[-1]
+            print(file_key)
 
             # Pre-signed URL 생성
             presigned_url = s3_client.generate_presigned_url(
                 'get_object',
                 Params={'Bucket': settings.AWS_STORAGE_BUCKET_NAME, 'Key': file_key},
-                ExpiresIn=60  # URL의 유효 기간 설정 (1시간)
+                ExpiresIn=60  # URL의 유효 기간 설정 (60초)
             )
-
+            print(presigned_url)
             return Response({'check': True, 'url': presigned_url}, status=status.HTTP_200_OK)
         else:
             return Response({'check': False}, status=status.HTTP_403_FORBIDDEN)
