@@ -13,12 +13,22 @@ from django.core.mail import EmailMessage
 from .utils import generate_password
 from .tasks import pdf_to_s3, upload_file_to_s3
 from django.conf import settings
+import base64
+from Cryptodome.Cipher import AES
+# AWS KMS 클라이언트 생성
+client = boto3.client('kms')
+
+# KMS Key ARN 설정 필요
+key_arn = 'arn:aws:kms:ap-northeast-2:211125613130:key/77914fbb-7764-413e-83ee-b8a2a517898a'
+
+# 패딩 함수 정의
+BLOCK_SIZE = 32
+PADDING = '|'
+pad = lambda s: s + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * PADDING
 
 class DocumentUploadView(APIView):
-    # 파일이나 폼 형태의 데이터를 처리해야하는 경우 필요!
     parser_classes = [MultiPartParser, FormParser]
 
-    # 스웨거로에서 파일 업로드를 포함하고싶을 땐 밑에처럼 openapi.IN_FORM으 스키마 구성하기!!
     @swagger_auto_schema(
         operation_description="Upload a PDF document",
         manual_parameters=[
@@ -32,58 +42,53 @@ class DocumentUploadView(APIView):
                     'message': openapi.Schema(type=openapi.TYPE_STRING, description='Success message'),
                     'pdfUrl': openapi.Schema(type=openapi.TYPE_STRING, description='URL of the uploaded PDF file'),
                     'documentId': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID of the document'),
-                    'isSuccessed': openapi.Schema(type=openapi.TYPE_INTEGER, description='is email sended?')
+                    'isSuccessed': openapi.Schema(type=openapi.TYPE_INTEGER, description='Is email sent?')
                 }
             )),
             400: 'Email and PDF file are required.'
         }
     )
     def post(self, request, *args, **kwargs):
-        # email은 data로 받아오기
         email = request.data.get('email')
-
-        # pdfFile은 FILES로 받아오기
         pdfFile = request.FILES.get('pdfFile')
-
-        # password는 무작위로 생성
         password = generate_password()
 
-        # 둘 중 하나라도 비어있다면 오류
         if not email or not pdfFile:
             return Response({'error': 'Email and PDF file are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # 고유한 파일 이름 생성, uuid4 -> 랜덤 생성 방식
-            file_name = f'{uuid.uuid4()}.pdf'
+            # 데이터 키 생성
+            data_key = client.generate_data_key(KeyId=key_arn, KeySpec='AES_256')
+            plaintext_key = data_key.get('Plaintext')
+            encrypted_key = data_key.get('CiphertextBlob')
 
-            # Document 객체 생성
+            # PDF 파일 암호화
+            encryptor = AES.new(plaintext_key)
+            encrypted_data = base64.b64encode(encryptor.encrypt(pad(pdfFile.read())))
+
+            # 암호화된 파일을 S3에 업로드
+            file_name = f'{uuid.uuid4()}.pdf.enc'
             document = Document(email=email, password=password)
+            pdf_to_s3(document, file_name, ContentFile(encrypted_data))
 
-            # Document의 pdfUrl 필드에 upload_to 속성이 걸려있기 때문에 바로 ContentFile 형태로 저장해도 url로 저장됨
-            # 이게 가능한 이유는 settings.py에서 default_file_storage로 s3를 지정해놨기때문!!
-            #document.pdfUrl.save(file_name, ContentFile(pdfFile.read()))
-            pdf_to_s3(document, file_name, ContentFile(pdfFile.read()))
-
-            # Document 객체 저장
+            # 문서 객체 저장
             document.save()
 
-            # 메일 발송을 위한 객체
-            emailMessage = EmailMessage(
-                'Title', # 메일 제목
-                f'안녕하세여! Password: {password}', # 메일 내용
-                to=[email] # 수신자 메일
-            )
-
             # 이메일 발송
-            isSuccessed = emailMessage.send()
+            email_message = EmailMessage(
+                'Title',  # 메일 제목
+                f'안녕하세요! Password: {password}',  # 메일 내용
+                to=[email]  # 수신자 메일
+            )
+            isSuccessed = email_message.send()
 
-            # 테스트를 위해 응답으로 pdfUrl을 추가로 지정했음. api 연동할 땐 documentId만!
             return Response({
                 'message': 'File uploaded successfully',
                 'pdfUrl': document.pdfUrl.url,
                 'documentId': document.id,
-                'isSuccessed': isSuccessed # 1이면 메일 전송 성공 0이면 실패
+                'isSuccessed': isSuccessed  # 1이면 메일 전송 성공, 0이면 실패
             }, status=status.HTTP_201_CREATED)
+            print("SUCCESS")
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
