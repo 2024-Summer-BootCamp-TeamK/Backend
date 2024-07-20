@@ -92,15 +92,15 @@ class DocumentEncryptionView(APIView):
                 description="ID of the Document",
                 type=openapi.TYPE_INTEGER,
                 required=True
+            ),
+            openapi.Parameter(
+                'X-Password',
+                openapi.IN_HEADER,
+                description="Password for the document",
+                type=openapi.TYPE_STRING,
+                required=True
             )
         ],
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            required=['password'],
-            properties={
-                'password': openapi.Schema(type=openapi.TYPE_STRING, description="Password for the document")
-            }
-        ),
         responses={
             200: openapi.Response('Document retrieved successfully', openapi.Schema(
                 type=openapi.TYPE_OBJECT,
@@ -120,7 +120,7 @@ class DocumentEncryptionView(APIView):
             return Response({'error': 'Document ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # 암호 확인
-        password = request.data.get('password')
+        password = request.headers.get('X-Password')
         if not password:
             return Response({'error': 'Password is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
