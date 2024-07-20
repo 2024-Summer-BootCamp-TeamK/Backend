@@ -75,3 +75,23 @@ class DocumentConsumer(AsyncWebsocketConsumer):
             'type': 'page_change',
             'payload': payload
         }))
+
+    # Receive message from document group
+    async def document_drawing_add(self, event):
+        payload = event['payload']
+
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps({
+            'type': 'drawing_add',
+            'payload': payload
+        }))
+
+    # Receive message from document group
+    async def document_drawing_update(self, event):
+        payload = event['payload']
+
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps({
+            'type': 'drawing_update',
+            'payload': payload
+        }))
