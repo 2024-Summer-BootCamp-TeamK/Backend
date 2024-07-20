@@ -85,6 +85,12 @@ class DocumentEncryptionView(APIView):
 
     @swagger_auto_schema(
         operation_description="Retrieve a document by its ID with password verification",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description='Password for the document'),
+            }
+        ),
         manual_parameters=[
             openapi.Parameter(
                 'documentId',
@@ -92,22 +98,12 @@ class DocumentEncryptionView(APIView):
                 description="ID of the Document",
                 type=openapi.TYPE_INTEGER,
                 required=True
-            ),
-            openapi.Parameter(
-                'X-Password',
-                openapi.IN_HEADER,
-                description="Password for the document",
-                type=openapi.TYPE_STRING,
-                required=True
             )
         ],
         responses={
             200: openapi.Response('Document retrieved successfully', openapi.Schema(
-                type=openapi.TYPE_OBJECT,
-                properties={
-                    'file': openapi.Schema(type=openapi.TYPE_STRING, description='Base64 encoded PDF file content'),
-                    'fileName': openapi.Schema(type=openapi.TYPE_STRING, description='Name of the PDF file')
-                }
+                type=openapi.TYPE_FILE,
+                description='The requested PDF file'
             )),
             400: 'Bad request. Missing document ID or password.',
             403: 'Forbidden. Incorrect password.',
@@ -120,7 +116,7 @@ class DocumentEncryptionView(APIView):
             return Response({'error': 'Document ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # 암호 확인
-        password = request.headers.get('X-Password')
+        password = request.data.get('password')
         if not password:
             return Response({'error': 'Password is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
