@@ -65,3 +65,13 @@ class DocumentConsumer(AsyncWebsocketConsumer):
             'type': 'mouse_move',
             'payload': payload
         }))
+
+    # Receive message from document group
+    async def document_page_change(self, event):
+        payload = event['payload']
+
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps({
+            'type': 'page_change',
+            'payload': payload
+        }))
