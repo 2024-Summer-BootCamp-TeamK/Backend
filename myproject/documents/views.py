@@ -223,7 +223,7 @@ class DocumentView(APIView):
         if not uploaded_file:
             return Response({'error': 'No PDF file was uploaded.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        bucket_name = 'lawbotttt'
+        bucket_name = os.getenv('AWS_STORAGE_BUCKET_NAME')
         pdf_key = document.pdfUrl.name
 
         # 중복된 'documents/' 경로 제거
@@ -235,8 +235,12 @@ class DocumentView(APIView):
         pdf_key = '/'.join(unique_pdf_key_parts)
 
         try:
+            # 파일 암호화
+            file_data = uploaded_file.read()
+            encrypted_data, data_key_ciphertext = encrypt_file(file_data)
+
             # delay: 작업을 비동기적으로 실행
-            result = upload_file_to_s3.delay(bucket_name, pdf_key, uploaded_file.read())
+            result = upload_file_to_s3.delay(bucket_name, pdf_key, encrypted_data, data_key_ciphertext)
 
             response_data = {
                 'task_id': result.id,

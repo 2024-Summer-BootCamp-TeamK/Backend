@@ -1,7 +1,9 @@
+import os
+
 from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
-from django.core.files.base import ContentFile
+from botocore.exceptions import NoCredentialsError, PartialCredentialsError
 import boto3
 from .models import Document
 
@@ -38,19 +40,23 @@ def pdf_to_s3(document_id, file_name, file, data_key_ciphertext):
 
 
 @shared_task()
-def upload_file_to_s3(bucket_name, pdf_key, file_data):
-  s3 = boto3.client('s3')
+def upload_file_to_s3(bucket_name, pdf_key, encrypted_data, data_key_ciphertext):
+  s3 = boto3.client('s3',
+                  aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+                  aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+                  region_name=os.getenv('AWS_S3_REGION_NAME'))
   try:
     s3.put_object(Bucket=bucket_name,
                   Key=pdf_key,
-                  Body=file_data,
+                  Body=encrypted_data,
                   ContentType='application/pdf',
                   ContentDisposition='inline',
-                  ACL='public-read'  # 파일을 공개로 설정
-                )
+                  ACL='public-read',  # 파일을 공개로 설정
+                  Metadata = {'x-amz-key-v2': data_key_ciphertext}  # 데이터 키를 메타데이터로 추가
+    )
     return {'status': 'success', 'pdf_key': pdf_key}
-  except Exception as e:
-    return {'status': 'failed', 'error': str(e)}
+  except (NoCredentialsError, PartialCredentialsError) as e:
+    return {'status': 'failure', 'error': str(e)}
 
 
 import logging
