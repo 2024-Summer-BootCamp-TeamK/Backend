@@ -1,3 +1,4 @@
+import logging
 import os
 
 import boto3
@@ -16,10 +17,14 @@ from .utils.generatePassword import generate_password
 from .utils.encryption import encrypt_file
 from .utils.decryption import decrypt_file
 from .tasks import pdf_to_s3
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentEncryptionUploadView(APIView):
     parser_classes = [MultiPartParser, FormParser]
+
 
     @swagger_auto_schema(
         operation_description="Upload a PDF document",
@@ -64,12 +69,15 @@ class DocumentEncryptionUploadView(APIView):
             pdf_to_s3.delay(document.id, file_name, encrypted_data, data_key_ciphertext)
             # Celery 작업이 완료된 후 모델 인스턴스 새로고침
             document.refresh_from_db()
+
             emailMessage = EmailMessage(
                 'Title',
                 f'안녕하세요! Password: {password}',
                 to=[email]
             )
             isSuccessed = emailMessage.send()
+
+            logger.info(f"pdfUrl: {document.pdfUrl}")
 
             return Response({
                 'message': 'File uploaded successfully',
