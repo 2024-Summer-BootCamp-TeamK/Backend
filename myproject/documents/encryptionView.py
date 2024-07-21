@@ -6,16 +6,16 @@ from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
-from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from .models import Document
 import uuid
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.core.mail import EmailMessage
-from .utils import generate_password
-from .encryption import encrypt_file, decrypt_file
-from .tasks import pdf_to_s3, upload_file_to_s3
+from .utils.generatePassword import generate_password
+from .utils.encryption import encrypt_file
+from .utils.decryption import decrypt_file
+from .tasks import pdf_to_s3
 
 
 class DocumentEncryptionUploadView(APIView):
@@ -54,12 +54,12 @@ class DocumentEncryptionUploadView(APIView):
 
             # 파일을 읽고 암호화
             file_data = pdfFile.read()
-            encrypted_data = encrypt_file(file_data)
+            encrypted_data, data_key_ciphertext = encrypt_file(file_data)
 
             document = Document(email=email, password=password)
 
-            # 암호화된 파일을 S3에 업로드
-            pdf_to_s3(document, file_name, ContentFile(encrypted_data))
+            # Celery 태스크를 통해 암호화된 파일을 S3에 업로드
+            pdf_to_s3.delay(document.id, file_name, encrypted_data, data_key_ciphertext)
 
             document.save()
 
@@ -145,7 +145,10 @@ class DocumentEncryptionView(APIView):
         try:
             response = s3_client.get_object(Bucket=bucket_name, Key=file_key)
             encrypted_data = response['Body'].read()
-            decrypted_data = decrypt_file(encrypted_data)
+            data_key_ciphertext = response['Metadata']['x-amz-key-v2']  # Assuming this is how it's stored
+
+            # 복호화
+            decrypted_data = decrypt_file(encrypted_data, data_key_ciphertext)
 
             # 파일을 반환하는 Response 객체 생성
             response = HttpResponse(decrypted_data, content_type='application/pdf')

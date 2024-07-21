@@ -1,4 +1,3 @@
-import boto3
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
@@ -10,7 +9,7 @@ import uuid
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.core.mail import EmailMessage
-from .utils import generate_password
+from .utils.generatePassword import generate_password
 from .tasks import pdf_to_s3, upload_file_to_s3
 
 class DocumentUploadView(APIView):
