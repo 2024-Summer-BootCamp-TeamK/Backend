@@ -3,7 +3,6 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.core.cache import cache
 
-
 class DocumentConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.document_id = self.scope['url_route']['kwargs']['document_id']
@@ -66,7 +65,6 @@ class DocumentConsumer(AsyncWebsocketConsumer):
             'payload': payload
         }))
 
-    # Receive message from document group
     async def document_page_change(self, event):
         payload = event['payload']
 
@@ -76,22 +74,22 @@ class DocumentConsumer(AsyncWebsocketConsumer):
             'payload': payload
         }))
 
-    # Receive message from document group
-    async def document_drawing_add(self, event):
+    # 서명 추가 이벤트 처리
+    async def document_add_drawing(self, event):
         payload = event['payload']
 
         # Send message to WebSocket
         await self.send(text_data=json.dumps({
-            'type': 'drawing_add',
+            'type': 'add_drawing',
             'payload': payload
         }))
 
-    # Receive message from document group
-    async def document_drawing_update(self, event):
+    # 서명 업데이트 이벤트 처리
+    async def document_update_drawing(self, event):
         payload = event['payload']
 
         # Send message to WebSocket
         await self.send(text_data=json.dumps({
-            'type': 'drawing_update',
+            'type': 'update_drawing',
             'payload': payload
         }))
