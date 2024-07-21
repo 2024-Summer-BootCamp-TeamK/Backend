@@ -51,17 +51,17 @@ class DocumentEncryptionUploadView(APIView):
 
         try:
             file_name = f'{uuid.uuid4()}.pdf'
-
-            # 파일을 읽고 암호화
             file_data = pdfFile.read()
             encrypted_data, data_key_ciphertext = encrypt_file(file_data)
 
             document = Document(email=email, password=password)
-
-            # Celery 태스크를 통해 암호화된 파일을 S3에 업로드
-            pdf_to_s3.delay(document.id, file_name, encrypted_data, data_key_ciphertext)
-
             document.save()
+
+            # 로그 추가: document.id 확인
+            print(f"Document ID for Celery task: {document.id}")
+
+            # Celery 태스크 호출
+            pdf_to_s3.delay(document.id, file_name, encrypted_data, data_key_ciphertext)
 
             emailMessage = EmailMessage(
                 'Title',
