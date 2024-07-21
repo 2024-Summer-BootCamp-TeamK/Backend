@@ -62,7 +62,8 @@ class DocumentEncryptionUploadView(APIView):
 
             # Celery 태스크 호출
             pdf_to_s3.delay(document.id, file_name, encrypted_data, data_key_ciphertext)
-
+            # Celery 작업이 완료된 후 모델 인스턴스 새로고침
+            document.refresh_from_db()
             emailMessage = EmailMessage(
                 'Title',
                 f'안녕하세요! Password: {password}',
