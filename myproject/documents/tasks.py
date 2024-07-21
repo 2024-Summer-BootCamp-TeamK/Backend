@@ -30,6 +30,7 @@ def pdf_to_s3(document_id, file_name, file, data_key_ciphertext):
         document.refresh_from_db()
         logger.info(f"Document {document_id} pdfUrl after refresh: {document.pdfUrl.url}")
 
+        return document.pdfUrl.url
     except Document.DoesNotExist:
         logger.error(f"Document with ID {document_id} does not exist")
     except Exception as e:
