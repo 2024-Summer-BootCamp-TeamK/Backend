@@ -7,9 +7,8 @@ from .models import Document
 
 
 @shared_task
-def pdf_to_s3(document_id, file_name, file_data, data_key_ciphertext):
+def pdf_to_s3(document, file_name, file_data, data_key_ciphertext):
     try:
-        document = Document.objects.get(id=document_id)
 
         # ContentFile를 사용하여 파일 데이터를 래핑
         content_file = ContentFile(file_data)
@@ -19,10 +18,10 @@ def pdf_to_s3(document_id, file_name, file_data, data_key_ciphertext):
         document.pdfUrl.save(file_name, content_file)
         document.save()
 
-        print(f"Successfully uploaded file {file_name} for document {document_id}")
+        print(f"Successfully uploaded file {file_name} for document")
 
     except Document.DoesNotExist:
-        print(f"Document with ID {document_id} does not exist")
+        print(f"Document does not exist")
     except Exception as e:
         print(f"Error uploading file to S3: {e}")
 @shared_task()
