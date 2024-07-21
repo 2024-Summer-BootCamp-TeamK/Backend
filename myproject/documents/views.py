@@ -36,7 +36,7 @@ class DocumentUploadView(APIView):
                 type=openapi.TYPE_OBJECT,
                 properties={
                     'message': openapi.Schema(type=openapi.TYPE_STRING, description='Success message'),
-                    'pdfUrl': openapi.Schema(type=openapi.TYPE_STRING, description='URL of the uploaded PDF file'),
+                    'task_id': openapi.Schema(type=openapi.TYPE_STRING, description='ID of the Celery task'),
                     'documentId': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID of the document'),
                     'isSuccessed': openapi.Schema(type=openapi.TYPE_INTEGER, description='is email sended?')
                 }
@@ -75,10 +75,6 @@ class DocumentUploadView(APIView):
             # Celery 태스크 호출
             result = pdf_to_s3.delay(document.id, file_name, encrypted_data, data_key_ciphertext)
 
-            # Celery 작업의 결과를 기다림
-            result.wait()  # 이 방법은 동기적입니다. 비동기적으로 작업이 완료되기를 기다리는 더 나은 방법이 있을 수 있습니다.
-            pdf_url = result.result if result.successful() else ""
-
             # 메일 발송을 위한 객체
             emailMessage = EmailMessage(
                 'Title', # 메일 제목
@@ -92,9 +88,9 @@ class DocumentUploadView(APIView):
             # 테스트를 위해 응답으로 pdfUrl을 추가로 지정했음. api 연동할 땐 documentId만!
             return Response({
                 'message': 'File uploaded successfully',
-                'pdfUrl': pdf_url,
+                'task_id': result.id,
                 'documentId': document.id,
-                'isSuccessed': isSuccessed # 1이면 메일 전송 성공 0이면 실패
+                'isSuccessed': isSuccessed  # 1이면 메일 전송 성공 0이면 실패
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
