@@ -15,7 +15,7 @@ kms_client = boto3.client(
 )
 
 # PDF 파일 복호화
-def decrypt_file(encrypted_data, data_key_ciphertext, kms_client):
+def decrypt_file(encrypted_data, data_key_ciphertext, kms_client=kms_client):
     # KMS를 사용하여 암호화된 데이터 키 복호화
     response = kms_client.decrypt(CiphertextBlob=b64decode(data_key_ciphertext))
     data_key_plaintext = response['Plaintext']
