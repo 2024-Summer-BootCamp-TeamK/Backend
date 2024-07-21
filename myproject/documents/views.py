@@ -1,3 +1,5 @@
+import base64
+
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
@@ -239,8 +241,12 @@ class DocumentView(APIView):
             file_data = uploaded_file.read()
             encrypted_data, data_key_ciphertext = encrypt_file(file_data)
 
+            # 데이터 키를 Base64로 인코딩
+            data_key_ciphertext_base64 = base64.b64encode(data_key_ciphertext).decode('utf-8')
+
+
             # delay: 작업을 비동기적으로 실행
-            result = upload_file_to_s3.delay(bucket_name, pdf_key, encrypted_data, data_key_ciphertext)
+            result = upload_file_to_s3.delay(bucket_name, pdf_key, encrypted_data, data_key_ciphertext_base64)
 
             response_data = {
                 'task_id': result.id,

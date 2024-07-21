@@ -40,7 +40,7 @@ def pdf_to_s3(document_id, file_name, file, data_key_ciphertext):
 
 
 @shared_task()
-def upload_file_to_s3(bucket_name, pdf_key, encrypted_data, data_key_ciphertext):
+def upload_file_to_s3(bucket_name, pdf_key, encrypted_data, data_key_ciphertext_base64):
   s3 = boto3.client('s3',
                   aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
                   aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
@@ -52,8 +52,8 @@ def upload_file_to_s3(bucket_name, pdf_key, encrypted_data, data_key_ciphertext)
                   ContentType='application/pdf',
                   ContentDisposition='inline',
                   ACL='public-read',  # 파일을 공개로 설정
-                  Metadata = {'x-amz-key-v2': data_key_ciphertext}  # 데이터 키를 메타데이터로 추가
-    )
+                  Metadata={'x-amz-key-v2': data_key_ciphertext_base64}  # 데이터 키를 메타데이터로 추가
+                  )
     return {'status': 'success', 'pdf_key': pdf_key}
   except (NoCredentialsError, PartialCredentialsError) as e:
     return {'status': 'failure', 'error': str(e)}
