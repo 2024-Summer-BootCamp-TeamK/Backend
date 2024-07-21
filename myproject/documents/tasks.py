@@ -6,20 +6,35 @@ import boto3
 from .models import Document
 
 
+import logging
+from django.core.files.base import ContentFile
+
+logger = logging.getLogger(__name__)
+
 @shared_task
 def pdf_to_s3(document_id, file_name, file, data_key_ciphertext):
     try:
-        # Document 객체 가져오기
+        logger.info(f"Starting pdf_to_s3 task for document ID {document_id}")
         document = Document.objects.get(id=document_id)
+        content_file = ContentFile(file)
+        content_file.data_key_ciphertext = data_key_ciphertext
+        logger.info(f"Saving file {file_name} to document {document_id}")
+        document.pdfUrl.save(file_name, content_file)
+        document.save()
+        logger.info(f"File {file_name} saved successfully for document {document_id}")
+
+        # 추가 로그: 저장된 문서의 URL 확인
+        logger.info(f"Document {document_id} pdfUrl: {document.pdfUrl.url}")
+
+        # 저장 후 모델 인스턴스 다시 로드하여 확인
+        document.refresh_from_db()
+        logger.info(f"Document {document_id} pdfUrl after refresh: {document.pdfUrl.url}")
+
     except Document.DoesNotExist:
         logger.error(f"Document with ID {document_id} does not exist")
-        return
+    except Exception as e:
+        logger.error(f"Error in pdf_to_s3 task: {e}")
 
-    content_file = ContentFile(file)
-    content_file.data_key_ciphertext = data_key_ciphertext
-
-    # 파일을 저장하고 Document 업데이트
-    document.pdfUrl.save(file_name, content_file)
 
 @shared_task()
 def upload_file_to_s3(bucket_name, pdf_key, file_data):
