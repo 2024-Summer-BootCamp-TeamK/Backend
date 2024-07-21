@@ -77,6 +77,17 @@ CORS_ALLOWED_ORIGINS = [
 
 ]
 
+CORS_ALLOW_HEADERS = [
+    'authorization',
+    'x-password',
+    'content-type',
+    'x-csrftoken',
+    'accept',
+    'origin',
+    'user-agent',
+    'access-control-allow-origin',
+]
+
 ROOT_URLCONF = 'myproject.urls'
 
 TEMPLATES = [

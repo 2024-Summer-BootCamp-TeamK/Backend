@@ -129,3 +129,4 @@ Werkzeug==3.0.3
 xmltodict==0.13.0
 yarl==1.9.4
 zope.interface==6.4.post2
+cryptography==42.0.8
