@@ -67,8 +67,10 @@ class DocumentEncryptionUploadView(APIView):
 
             # Celery 태스크 호출
             result = pdf_to_s3.delay(document.id, file_name, encrypted_data, data_key_ciphertext)
-            # Celery 작업이 완료된 후 모델 인스턴스 새로고침
-            document.refresh_from_db()
+
+            # Celery 작업의 결과를 기다림
+            result.wait()  # 이 방법은 동기적입니다. 비동기적으로 작업이 완료되기를 기다리는 더 나은 방법이 있을 수 있습니다.
+            pdf_url = result.result if result.successful() else ""
 
             emailMessage = EmailMessage(
                 'Title',
@@ -77,11 +79,11 @@ class DocumentEncryptionUploadView(APIView):
             )
             isSuccessed = emailMessage.send()
 
-            logger.info(f"pdfUrl: {result}")
+            logger.info(f"pdfUrl: {pdf_url}")
 
             return Response({
                 'message': 'File uploaded successfully',
-                'pdfUrl': result,
+                'pdfUrl': pdf_url,
                 'documentId': document.id,
                 'isSuccessed': isSuccessed
             }, status=status.HTTP_201_CREATED)
