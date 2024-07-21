@@ -7,12 +7,24 @@ from .models import Document
 
 
 @shared_task
-def pdf_to_s3(document_id, file_name, file, data_key_ciphertext):
-    document = Document.objects.get(id=document_id)
-    content_file = ContentFile(file)
-    content_file.data_key_ciphertext = data_key_ciphertext
-    document.pdfUrl.save(file_name, content_file)
-    document.save()
+def pdf_to_s3(document_id, file_name, file_data, data_key_ciphertext):
+    try:
+        document = Document.objects.get(id=document_id)
+
+        # ContentFile를 사용하여 파일 데이터를 래핑
+        content_file = ContentFile(file_data)
+        content_file.data_key_ciphertext = data_key_ciphertext
+
+        # FileField의 save 메서드를 호출하여 파일을 S3에 저장
+        document.pdfUrl.save(file_name, content_file)
+        document.save()
+
+        print(f"Successfully uploaded file {file_name} for document {document_id}")
+
+    except Document.DoesNotExist:
+        print(f"Document with ID {document_id} does not exist")
+    except Exception as e:
+        print(f"Error uploading file to S3: {e}")
 @shared_task()
 def upload_file_to_s3(bucket_name, pdf_key, file_data):
   s3 = boto3.client('s3')

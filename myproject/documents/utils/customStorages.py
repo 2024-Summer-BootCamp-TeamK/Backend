@@ -1,7 +1,8 @@
-# custom_storages.py
-
 from storages.backends.s3boto3 import S3Boto3Storage
 from base64 import b64encode
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CustomS3Boto3Storage(S3Boto3Storage):
     def _save(self, name, content):
@@ -15,13 +16,16 @@ class CustomS3Boto3Storage(S3Boto3Storage):
         return name
 
     def _set_metadata(self, name, data_key_ciphertext):
-        s3_client = self.connection.meta.client
-        s3_client.copy_object(
-            Bucket=self.bucket_name,
-            Key=name,
-            CopySource={'Bucket': self.bucket_name, 'Key': name},
-            MetadataDirective='REPLACE',
-            Metadata={
-                'x-amz-key-v2': b64encode(data_key_ciphertext).decode('utf-8')
-            }
-        )
+        try:
+            s3_client = self.connection.meta.client
+            s3_client.copy_object(
+                Bucket=self.bucket_name,
+                Key=name,
+                CopySource={'Bucket': self.bucket_name, 'Key': name},
+                MetadataDirective='REPLACE',
+                Metadata={
+                    'x-amz-key-v2': b64encode(data_key_ciphertext).decode('utf-8')
+                }
+            )
+        except Exception as e:
+            logger.error(f"Error setting metadata: {e}")
