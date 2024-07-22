@@ -93,7 +93,7 @@ class DocumentUploadView(APIView):
             text_content = strip_tags(html_content)
 
             email_message = EmailMultiAlternatives(
-                '계약서 공유',  # 이메일 제목
+                'LawBot 계약서 공유',  # 이메일 제목
                 text_content,  # 텍스트 내용
                 to=[email]
             )
