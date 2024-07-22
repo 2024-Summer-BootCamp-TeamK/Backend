@@ -1,16 +1,13 @@
 import base64
-
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
-from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from .models import Document
 import uuid
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from django.core.mail import EmailMessage
 from .utils.generatePassword import generate_password
 from .tasks import pdf_to_s3, upload_file_to_s3
 import boto3
@@ -18,6 +15,9 @@ import os
 from django.http import HttpResponse
 from .utils.encryption import encrypt_file
 from .utils.decryption import decrypt_file
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 
 class DocumentUploadView(APIView):
@@ -75,15 +75,32 @@ class DocumentUploadView(APIView):
             # Celery 태스크 호출
             result = pdf_to_s3.delay(document.id, file_name, encrypted_data, data_key_ciphertext)
 
-            # 메일 발송을 위한 객체
-            emailMessage = EmailMessage(
-                'Title', # 메일 제목
-                f'안녕하세여! Password: {password}', # 메일 내용
-                to=[email] # 수신자 메일
+            # # 메일 발송을 위한 객체
+            # emailMessage = EmailMessage(
+            #     'Title', # 메일 제목
+            #     f'안녕하세여! Password: {password}', # 메일 내용
+            #     to=[email] # 수신자 메일
+            # )
+            # 이메일 템플릿 렌더링
+
+            document_link = f'http://localhost:5173/keyinput/{document.id}'
+
+            context = {
+                'link': document_link,
+                'password': password
+            }
+            html_content = render_to_string('document_email.html', context)
+            text_content = strip_tags(html_content)
+
+            email_message = EmailMultiAlternatives(
+                'LawBot 계약서 공유',  # 이메일 제목
+                text_content,  # 텍스트 내용
+                to=[email]
             )
+            email_message.attach_alternative(html_content, "text/html")
 
             # 이메일 발송
-            isSuccessed = emailMessage.send()
+            isSuccessed = email_message.send()
 
             # 테스트를 위해 응답으로 pdfUrl을 추가로 지정했음. api 연동할 땐 documentId만!
             return Response({
