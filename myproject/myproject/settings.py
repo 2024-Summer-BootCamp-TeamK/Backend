@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-ec@44d--9kdqz-$xog1a94r1=u3j+)na@bhumh!6t$t7*dg6%@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'localhost', 'django', 'lawbot.store', 'www.lawbot.store']
 
 # Application definition
 
@@ -74,7 +74,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://0.0.0.0:8000",
     "http://localhost",
     "http://localhost:5173",
-
+    "http://www.lawbot.store",
+    "http://lawbot.store",
 ]
 
 CORS_ALLOW_HEADERS = [
@@ -218,4 +219,6 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',
     'http://localhost',
+    'http://lawbot.store',
+    'http://www.lawbot.store',
 ]
