@@ -83,7 +83,7 @@ class DocumentUploadView(APIView):
             # )
             # 이메일 템플릿 렌더링
 
-            document_link = f'http://localhost:5173/keyinput/{document.id}'
+            document_link = f'http://www.lawbot.store/keyinput/{document.id}'
 
             context = {
                 'link': document_link,
