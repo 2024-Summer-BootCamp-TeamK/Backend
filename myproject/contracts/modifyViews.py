@@ -108,7 +108,7 @@ class ContractModifyView(APIView):
 
 class UpdatedContractReadView(APIView):
     @swagger_auto_schema(
-        operation_description="수정된 계약서를 조회하는 Url을 반환해주는 API",
+        operation_description="수정된 계약서와 원본 계약서를 조회하는 Url을 반환해주는 API",
         responses={
             200: openapi.Response('Modified Contract retrieved successfully', openapi.Schema(
                 type=openapi.TYPE_OBJECT,
