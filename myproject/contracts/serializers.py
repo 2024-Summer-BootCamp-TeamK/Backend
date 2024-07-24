@@ -12,7 +12,7 @@ class ContractUpdateSerializer(serializers.Serializer):
 class UpdatedContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
-        fields = ['result_url']
+        fields = ['origin_url', 'result_url']
 
 
 class ArticleMainSerializer(serializers.ModelSerializer):
