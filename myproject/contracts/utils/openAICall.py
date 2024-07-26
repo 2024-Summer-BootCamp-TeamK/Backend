@@ -73,6 +73,9 @@ def analyze_contract(contract_text, prompt, PINECONE_API_KEY, OPENAI_API_KEY):
         # 질문과 검색된 문서 내용을 사용하여 모델에 invoke
         response = llm_sequence.invoke({"context": context, "user_question": user_question})
         raw_result = response.content
+
+        print("raw_result: ",raw_result)
+
         return raw_result
 
     except Exception as e:
