@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_celery_beat',
     'django_celery_results',
+    'django_prometheus',
 ]
 
 CHANNEL_LAYERS = {
@@ -58,6 +59,7 @@ CHANNEL_LAYERS = {
 }
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -66,6 +68,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -116,7 +119,7 @@ load_dotenv()
 # Database settings
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django_prometheus.db.backends.mysql',
         'NAME': os.getenv('MYSQL_DATABASE'),
         'USER': os.getenv('MYSQL_USER'),
         'PASSWORD': os.getenv('MYSQL_PASSWORD'),

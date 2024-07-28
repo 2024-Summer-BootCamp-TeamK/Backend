@@ -31,6 +31,7 @@ Django==5.0.6
 django-celery-beat==2.6.0
 django-celery-results==2.5.1
 django-cors-headers==4.4.0
+django-prometheus==2.3.1
 django-storages==1.14.3
 django-timezone-field==7.0
 djangorestframework==3.15.2
@@ -80,6 +81,7 @@ packaging==24.1
 pdfrw==0.4
 pillow==10.4.0
 pinecone==4.0.0
+prometheus_client==0.20.0
 prompt_toolkit==3.0.47
 pyasn1==0.6.0
 pyasn1_modules==0.4.0
@@ -129,4 +131,3 @@ Werkzeug==3.0.3
 xmltodict==0.13.0
 yarl==1.9.4
 zope.interface==6.4.post2
-cryptography==42.0.8
