@@ -28,7 +28,7 @@ class DocumentUploadView(APIView):
     @swagger_auto_schema(
         operation_description="PDF 문서 업로드",
         manual_parameters=[
-            openapi.Parameter('emails', openapi.IN_FORM, description="이메일 주소 배열", type=openapi.TYPE_ARRAY,
+            openapi.Parameter('emails', openapi.IN_BODY, description="이메일 주소 배열", type=openapi.TYPE_ARRAY,
                               items=openapi.Items(type=openapi.TYPE_STRING), required=True),
             openapi.Parameter('pdfFile', openapi.IN_FORM, description="PDF 파일", type=openapi.TYPE_FILE, required=True)
         ],
@@ -48,7 +48,7 @@ class DocumentUploadView(APIView):
     )
     def post(self, request, *args, **kwargs):
         # emails는 data로 받아오기
-        emails = request.data.getlist('emails')
+        emails = request.data.get('emails', [])
 
         # pdfFile은 FILES로 받아오기
         pdfFile = request.FILES.get('pdfFile')
