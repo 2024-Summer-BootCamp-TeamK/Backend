@@ -27,11 +27,22 @@ class DocumentUploadView(APIView):
     # 스웨거로에서 파일 업로드를 포함하고싶을 땐 밑에처럼 openapi.IN_FORM으 스키마 구성하기!!
     @swagger_auto_schema(
         operation_description="PDF 문서 업로드",
-        manual_parameters=[
-            openapi.Parameter('emails', openapi.IN_BODY, description="이메일 주소 배열", type=openapi.TYPE_ARRAY,
-                              items=openapi.Items(type=openapi.TYPE_STRING), required=True),
-            openapi.Parameter('pdfFile', openapi.IN_FORM, description="PDF 파일", type=openapi.TYPE_FILE, required=True)
-        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'emails': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(type=openapi.TYPE_STRING),
+                    description="이메일 주소 배열"
+                ),
+                'pdfFile': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    format=openapi.FORMAT_BINARY,
+                    description="PDF 파일"
+                )
+            },
+            required=['emails', 'pdfFile']
+        ),
         responses={
             201: openapi.Response('파일이 성공적으로 업로드 되었습니다', openapi.Schema(
                 type=openapi.TYPE_OBJECT,
@@ -108,7 +119,6 @@ class DocumentUploadView(APIView):
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class DocumentView(APIView):
     parser_classes = [MultiPartParser, FormParser]
