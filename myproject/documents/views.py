@@ -18,14 +18,28 @@ from .utils.decryption import decrypt_file
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from .serializers import DocumentUploadSerializer
+from .serializers import EmailSerializer
 
 class DocumentUploadView(APIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     @swagger_auto_schema(
         operation_description="PDF 문서 업로드",
-        request_body=DocumentUploadSerializer,
+        manual_parameters=[
+            openapi.Parameter(
+                'emails',
+                openapi.IN_FORM,
+                description="이메일 주소 배열",
+                type=openapi.TYPE_ARRAY,
+                items=openapi.Items(type=openapi.TYPE_STRING)
+            ),
+            openapi.Parameter(
+                'pdfFile',
+                openapi.IN_FORM,
+                description="PDF 파일",
+                type=openapi.TYPE_FILE
+            )
+        ],
         responses={
             201: openapi.Response('파일이 성공적으로 업로드 되었습니다', openapi.Schema(
                 type=openapi.TYPE_OBJECT,
@@ -41,11 +55,11 @@ class DocumentUploadView(APIView):
         }
     )
     def post(self, request, *args, **kwargs):
-        serializer = DocumentUploadSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        email_serializer = EmailSerializer(data=request.data)
+        if not email_serializer.is_valid():
+            return Response(email_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        emails = serializer.validated_data['emails']
+        emails = email_serializer.validated_data['emails']
         pdfFile = request.FILES.get('pdfFile')
         password = generate_password()
 
@@ -91,6 +105,7 @@ class DocumentUploadView(APIView):
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class DocumentView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
