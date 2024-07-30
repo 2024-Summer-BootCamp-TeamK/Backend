@@ -18,7 +18,7 @@ from .utils.decryption import decrypt_file
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-
+from .serializers import DocumentUploadSerializer
 
 class DocumentUploadView(APIView):
     # 파일이나 폼 형태의 데이터를 처리해야하는 경우 필요!
@@ -27,22 +27,7 @@ class DocumentUploadView(APIView):
     # 스웨거로에서 파일 업로드를 포함하고싶을 땐 밑에처럼 openapi.IN_FORM으 스키마 구성하기!!
     @swagger_auto_schema(
         operation_description="PDF 문서 업로드",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'emails': openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    items=openapi.Items(type=openapi.TYPE_STRING),
-                    description="이메일 주소 배열"
-                ),
-                'pdfFile': openapi.Schema(
-                    type=openapi.TYPE_STRING,
-                    format=openapi.FORMAT_BINARY,
-                    description="PDF 파일"
-                )
-            },
-            required=['emails', 'pdfFile']
-        ),
+        request_body=DocumentUploadSerializer,
         responses={
             201: openapi.Response('파일이 성공적으로 업로드 되었습니다', openapi.Schema(
                 type=openapi.TYPE_OBJECT,
@@ -58,40 +43,31 @@ class DocumentUploadView(APIView):
         }
     )
     def post(self, request, *args, **kwargs):
-        # emails는 data로 받아오기
-        emails = request.data.get('emails', [])
+        serializer = DocumentUploadSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # pdfFile은 FILES로 받아오기
+        emails = serializer.validated_data['emails']
         pdfFile = request.FILES.get('pdfFile')
-
-        # password는 무작위로 생성
         password = generate_password()
 
-        # 둘 중 하나라도 비어있다면 오류
-        if not emails or not pdfFile:
-            return Response({'error': '이메일과 PDF 파일이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not pdfFile:
+            return Response({'error': 'PDF 파일이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # 고유한 파일 이름 생성, uuid4 -> 랜덤 생성 방식
             file_name = f'{uuid.uuid4()}.pdf'
             file_data = pdfFile.read()
             encrypted_data, data_key_ciphertext = encrypt_file(file_data)
 
-            # Document 객체 생성
             document = Document(password=password)
             document.save()
 
-            # Celery 태스크 호출
             result = pdf_to_s3.delay(document.id, file_name, encrypted_data, data_key_ciphertext)
 
-            # 이메일 전송 결과 리스트 초기화
             isSuccessed_list = []
 
             for email in emails:
-                # 문서 링크 생성
                 document_link = f'http://localhost:5173/keyinput/{document.id}'
-
-                # 이메일 컨텍스트 설정
                 context = {
                     'link': document_link,
                     'password': password
@@ -100,22 +76,20 @@ class DocumentUploadView(APIView):
                 text_content = strip_tags(html_content)
 
                 email_message = EmailMultiAlternatives(
-                    'LawBot 계약서 공유',  # 이메일 제목
-                    text_content,  # 텍스트 내용
+                    'LawBot 계약서 공유',
+                    text_content,
                     to=[email]
                 )
                 email_message.attach_alternative(html_content, "text/html")
 
-                # 이메일 발송 및 결과 저장
                 isSuccessed = email_message.send()
                 isSuccessed_list.append(isSuccessed)
 
-            # 응답 생성
             return Response({
                 'message': '파일이 성공적으로 업로드 되었습니다',
                 'task_id': result.id,
                 'documentId': document.id,
-                'isSuccessed': isSuccessed_list  # 각 이메일 전송 결과 리스트
+                'isSuccessed': isSuccessed_list
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
