@@ -1,6 +1,6 @@
 import base64
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -21,10 +21,8 @@ from django.utils.html import strip_tags
 from .serializers import DocumentUploadSerializer
 
 class DocumentUploadView(APIView):
-    # 파일이나 폼 형태의 데이터를 처리해야하는 경우 필요!
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-    # 스웨거로에서 파일 업로드를 포함하고싶을 땐 밑에처럼 openapi.IN_FORM으 스키마 구성하기!!
     @swagger_auto_schema(
         operation_description="PDF 문서 업로드",
         request_body=DocumentUploadSerializer,
@@ -93,7 +91,6 @@ class DocumentUploadView(APIView):
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 class DocumentView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
