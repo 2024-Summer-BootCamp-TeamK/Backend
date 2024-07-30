@@ -30,8 +30,7 @@ class DocumentUploadView(APIView):
                 'emails',
                 openapi.IN_FORM,
                 description="이메일 주소 배열",
-                type=openapi.TYPE_ARRAY,
-                items=openapi.Items(type=openapi.TYPE_STRING),
+                type=openapi.TYPE_STRING,
                 required=True
             ),
             openapi.Parameter(
@@ -57,7 +56,11 @@ class DocumentUploadView(APIView):
         }
     )
     def post(self, request, *args, **kwargs):
-        emails = request.data.getlist('emails')
+        emails = request.data.get('emails')
+        if isinstance(emails, str):
+            emails = emails.split(',')
+
+        emails = [email.strip() for email in emails]
         pdfFile = request.FILES.get('pdfFile')
         password = generate_password()
 
