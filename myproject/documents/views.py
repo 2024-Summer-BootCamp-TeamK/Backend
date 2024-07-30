@@ -1,6 +1,6 @@
 import base64
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -18,100 +18,94 @@ from .utils.decryption import decrypt_file
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-
+from .serializers import DocumentUploadSerializer
 
 class DocumentUploadView(APIView):
-    # 파일이나 폼 형태의 데이터를 처리해야하는 경우 필요!
     parser_classes = [MultiPartParser, FormParser]
 
-    # 스웨거로에서 파일 업로드를 포함하고싶을 땐 밑에처럼 openapi.IN_FORM으 스키마 구성하기!!
     @swagger_auto_schema(
-        operation_description="Upload a PDF document",
+        operation_description="PDF 문서 업로드",
         manual_parameters=[
-            openapi.Parameter('email', openapi.IN_FORM, description="Email address", type=openapi.TYPE_STRING, required=True),
-            openapi.Parameter('pdfFile', openapi.IN_FORM, description="PDF file", type=openapi.TYPE_FILE, required=True)
+            openapi.Parameter(
+                'emails',
+                openapi.IN_FORM,
+                description="이메일 주소 배열",
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+            openapi.Parameter(
+                'pdfFile',
+                openapi.IN_FORM,
+                description="PDF 파일",
+                type=openapi.TYPE_FILE,
+                required=True
+            )
         ],
         responses={
-            201: openapi.Response('File uploaded successfully', openapi.Schema(
+            201: openapi.Response('파일이 성공적으로 업로드 되었습니다', openapi.Schema(
                 type=openapi.TYPE_OBJECT,
                 properties={
-                    'message': openapi.Schema(type=openapi.TYPE_STRING, description='Success message'),
-                    'task_id': openapi.Schema(type=openapi.TYPE_STRING, description='ID of the Celery task'),
-                    'documentId': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID of the document'),
-                    'isSuccessed': openapi.Schema(type=openapi.TYPE_INTEGER, description='is email sended?')
+                    'message': openapi.Schema(type=openapi.TYPE_STRING, description='성공 메시지'),
+                    'task_id': openapi.Schema(type=openapi.TYPE_STRING, description='Celery 태스크 ID'),
+                    'documentId': openapi.Schema(type=openapi.TYPE_INTEGER, description='문서 ID'),
+                    'isSuccessed': openapi.Schema(type=openapi.TYPE_ARRAY, description='이메일 전송 성공 여부',
+                                                  items=openapi.Items(type=openapi.TYPE_INTEGER))
                 }
             )),
-            400: 'Email and PDF file are required.'
+            400: '이메일과 PDF 파일이 필요합니다.'
         }
     )
     def post(self, request, *args, **kwargs):
-        # email은 data로 받아오기
-        email = request.data.get('email')
+        emails = request.data.get('emails')
+        if isinstance(emails, str):
+            emails = emails.split(',')
 
-        # pdfFile은 FILES로 받아오기
+        emails = [email.strip() for email in emails]
         pdfFile = request.FILES.get('pdfFile')
-
-        # password는 무작위로 생성
         password = generate_password()
 
-        # 둘 중 하나라도 비어있다면 오류
-        if not email or not pdfFile:
-            return Response({'error': 'Email and PDF file are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not emails or not pdfFile:
+            return Response({'error': '이메일과 PDF 파일이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # 고유한 파일 이름 생성, uuid4 -> 랜덤 생성 방식
             file_name = f'{uuid.uuid4()}.pdf'
             file_data = pdfFile.read()
             encrypted_data, data_key_ciphertext = encrypt_file(file_data)
-            # Document 객체 생성
-            document = Document(email=email, password=password)
+
+            document = Document(password=password)
             document.save()
 
-            # Document의 pdfUrl 필드에 upload_to 속성이 걸려있기 때문에 바로 ContentFile 형태로 저장해도 url로 저장됨
-            # 이게 가능한 이유는 settings.py에서 default_file_storage로 s3를 지정해놨기때문!!
-            #document.pdfUrl.save(file_name, ContentFile(pdfFile.read()))
-            # 이랬는데 pdf_to_s3(document, file_name, ContentFile(pdfFile.read()))
-            # 암호화를 적용해서 위의 코드만으로는 안된다.
-            # Celery 태스크 호출
             result = pdf_to_s3.delay(document.id, file_name, encrypted_data, data_key_ciphertext)
 
-            # # 메일 발송을 위한 객체
-            # emailMessage = EmailMessage(
-            #     'Title', # 메일 제목
-            #     f'안녕하세여! Password: {password}', # 메일 내용
-            #     to=[email] # 수신자 메일
-            # )
-            # 이메일 템플릿 렌더링
+            isSuccessed_list = []
 
-            document_link = f'http://localhost:5173/keyinput/{document.id}'
+            for email in emails:
+                document_link = f'http://localhost:5173/keyinput/{document.id}'
+                context = {
+                    'link': document_link,
+                    'password': password
+                }
+                html_content = render_to_string('document_email.html', context)
+                text_content = strip_tags(html_content)
 
-            context = {
-                'link': document_link,
-                'password': password
-            }
-            html_content = render_to_string('document_email.html', context)
-            text_content = strip_tags(html_content)
+                email_message = EmailMultiAlternatives(
+                    'LawBot 계약서 공유',
+                    text_content,
+                    to=[email]
+                )
+                email_message.attach_alternative(html_content, "text/html")
 
-            email_message = EmailMultiAlternatives(
-                'LawBot 계약서 공유',  # 이메일 제목
-                text_content,  # 텍스트 내용
-                to=[email]
-            )
-            email_message.attach_alternative(html_content, "text/html")
+                isSuccessed = email_message.send()
+                isSuccessed_list.append(isSuccessed)
 
-            # 이메일 발송
-            isSuccessed = email_message.send()
-
-            # 테스트를 위해 응답으로 pdfUrl을 추가로 지정했음. api 연동할 땐 documentId만!
             return Response({
-                'message': 'File uploaded successfully',
+                'message': '파일이 성공적으로 업로드 되었습니다',
                 'task_id': result.id,
                 'documentId': document.id,
-                'isSuccessed': isSuccessed  # 1이면 메일 전송 성공 0이면 실패
+                'isSuccessed': isSuccessed_list
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class DocumentView(APIView):
     parser_classes = [MultiPartParser, FormParser]
