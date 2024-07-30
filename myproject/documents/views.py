@@ -18,28 +18,29 @@ from .utils.decryption import decrypt_file
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from .serializers import EmailSerializer
+from .serializers import DocumentUploadSerializer
 
 class DocumentUploadView(APIView):
-    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    parser_classes = [MultiPartParser, FormParser]
 
     @swagger_auto_schema(
         operation_description="PDF 문서 업로드",
-        manual_parameters=[
-            openapi.Parameter(
-                'emails',
-                openapi.IN_FORM,
-                description="이메일 주소 배열",
-                type=openapi.TYPE_ARRAY,
-                items=openapi.Items(type=openapi.TYPE_STRING)
-            ),
-            openapi.Parameter(
-                'pdfFile',
-                openapi.IN_FORM,
-                description="PDF 파일",
-                type=openapi.TYPE_FILE
-            )
-        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'emails': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(type=openapi.TYPE_STRING),
+                    description="이메일 주소 배열"
+                ),
+                'pdfFile': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    format=openapi.FORMAT_BINARY,
+                    description="PDF 파일"
+                )
+            },
+            required=['emails', 'pdfFile']
+        ),
         responses={
             201: openapi.Response('파일이 성공적으로 업로드 되었습니다', openapi.Schema(
                 type=openapi.TYPE_OBJECT,
@@ -55,11 +56,11 @@ class DocumentUploadView(APIView):
         }
     )
     def post(self, request, *args, **kwargs):
-        email_serializer = EmailSerializer(data=request.data)
-        if not email_serializer.is_valid():
-            return Response(email_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = DocumentUploadSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        emails = email_serializer.validated_data['emails']
+        emails = serializer.validated_data['emails']
         pdfFile = request.FILES.get('pdfFile')
         password = generate_password()
 
