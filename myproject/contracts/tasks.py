@@ -142,7 +142,7 @@ def main_review_get_task(self, contractId):
         return {'status': 'error', 'message': str(e)}
 
 @shared_task(bind=True, base=MyBaseTask, autoretry_for=(requests.exceptions.RequestException, fitz.FileDataError),
-             retry_kwargs={'max_retries': 5, 'countdown': 60 * 3})
+             retry_kwargs={'max_retries': 10, 'countdown': 60 * 5})
 def toxin_review_get_task(self, contractId):
 
     PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
