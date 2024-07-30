@@ -21,7 +21,7 @@ from django.utils.html import strip_tags
 from .serializers import DocumentUploadSerializer
 
 class DocumentUploadView(APIView):
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     @swagger_auto_schema(
         operation_description="PDF 문서 업로드",
